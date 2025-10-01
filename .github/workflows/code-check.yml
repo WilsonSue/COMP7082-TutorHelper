@@ -1,0 +1,33 @@
+name: Lint & Format
+
+# 👇 This tells GitHub when to run the workflow
+on:
+  push:
+    branches: [ "main", "dev" ]   # run on pushes to main and dev
+  pull_request:
+    branches: [ "main", "dev" ]   # run on PRs targeting main/dev
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      # ---------- Frontend Lint ----------
+      - name: Install frontend deps
+        run: npm install --prefix frontend
+      - name: Run ESLint
+        run: npm run lint --prefix frontend
+
+      # ---------- Backend Lint ----------
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+            python-version: '3.13' 
+      - run: python my_script.py
+
+      - name: Install backend deps
+        run: pip install flake8 black isort
+
+      - name: Run flake8
+        run: flake8 backend
