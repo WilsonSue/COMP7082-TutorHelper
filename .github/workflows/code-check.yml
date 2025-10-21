@@ -3,9 +3,9 @@ name: Lint & Format
 # 👇 This tells GitHub when to run the workflow
 on:
   push:
-    branches: [ "main", "dev" ]   # run on pushes to main and dev
+    branches: [ "main", "dev", "feature*" ]   # run on pushes to main and dev
   pull_request:
-    branches: [ "main", "dev" ]   # run on PRs targeting main/dev
+    branches: [ "main", "dev", "feature*" ]   # run on PRs targeting main/dev
 
 jobs:
   lint:
