@@ -7,7 +7,7 @@ import prettierConfig from 'eslint-config-prettier';
 
 export default [
   {
-    files: ['**/*.{js,jsx,ts,tsx}'],
+    files: ['**/*.{js,jsx}'],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: 'module',
@@ -23,7 +23,6 @@ export default [
       },
     },
     plugins: {
-      '@typescript-eslint': typescriptEslintPlugin,
       react: reactPlugin,
       prettier: prettierPlugin,
     },
