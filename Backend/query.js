@@ -6,7 +6,7 @@ const BASE_URL = "http://localhost:3000";
 async function askModel(model, prompt) {
   try {
     const res = await axios.post(`${BASE_URL}/api/ask/${model}`, { prompt });
-    return res.data.output || res.data.answer;
+    return res.data.output || res.data.answer || res.data;
   } catch (err) {
     console.error("Error calling model:", model, err.response?.data || err.message);
     throw err;
@@ -37,26 +37,40 @@ async function runSocratic({ topic, level = "High School", style = "gentle" }) {
   return await askModel("gpt", prompt);
 }
 
-async function test() {
-  const topic = "machine learning";
+async function runFullCycle({ topic, level = "Undergraduate", style = "philosophical" }) {
+  const result = {};
 
   console.log("Step 1: Asking model");
-  const initial = await askModel("gpt", `Explain ${topic} simply.`);
-  console.log(initial);
+  result.initial = await askModel("gpt", `Explain ${topic} simply.`);
 
-  console.log("\nStep 2: Fact checking");
-  const feedback = await runFactCheck({ topic, aiOutput: initial });
-  console.log(feedback);
+  console.log("Step 2: Fact checking");
+  result.feedback = await runFactCheck({ topic, aiOutput: result.initial });
 
-  console.log("\nStep 3: Revising");
-  const revision = await runRevision({ topic, originalOutput: initial, feedback });
-  console.log(revision);
+  console.log("Step 3: Revising");
+  result.revision = await runRevision({
+    topic,
+    originalOutput: result.initial,
+    feedback: result.feedback,
+  });
 
-  console.log("\nStep 4: Socratic prompt");
-  const hint = await runSocratic({ topic, level: "Undergraduate", style: "philosophical" });
-  console.log(hint);
+  console.log("Step 4: Socratic questioning");
+  result.hint = await runSocratic({ topic, level, style });
+
+  return result;
+}
+
+async function test() {
+  const topic = "machine learning";
+  const results = await runFullCycle({ topic });
+  console.log(JSON.stringify(results, null, 2));
 }
 
 if (require.main === module) test();
 
-module.exports = { askModel, runFactCheck, runRevision, runSocratic };
+module.exports = {
+  askModel,
+  runFactCheck,
+  runRevision,
+  runSocratic,
+  runFullCycle,
+};
