@@ -2,6 +2,7 @@ const express = require("express");
 const axios = require("axios");
 const { InferenceClient } = require("@huggingface/inference");
 const { GoogleGenAI } = require("@google/genai");
+const { OpenAI } = require("openai");
 require("dotenv").config();
 
 const app = express();
@@ -10,6 +11,10 @@ app.use(express.json()); // parse JSON bodies
 const client = new InferenceClient(process.env.HF_TOKEN);
 // Create the Gemini client (reads API key from GEMINI_API_KEY env variable)
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const gptClient = new OpenAI({
+  baseURL: "https://router.huggingface.co/v1",
+  apiKey: process.env.HF_TOKEN
+});
 
 // ==========================
 // Route 1: DeepSeek
@@ -36,21 +41,42 @@ app.post("/api/ask/deepseek", async (req, res) => {
 // ==========================
 // Route 2: LLaMA
 // ==========================
-app.post("/api/ask/llama", async (req, res) => {
+// app.post("/api/ask/llama", async (req, res) => {
+//   try {
+//     const { prompt } = req.body;
+//     if (!prompt) return res.status(400).json({ error: "Missing 'prompt'" });
+
+//     const output = await client.textGeneration({
+//       provider: "featherless-ai",
+//       model: "meta-llama/Llama-3.1-8B",
+//       inputs: prompt,
+//     });
+
+//     res.json({ model: "LLaMA", output });
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ error: "Something went wrong." });
+//   }
+// });
+
+// ==========================
+// Route 2: GPT-OSS (replacing LLaMA)
+// ==========================
+app.post("/api/ask/gpt", async (req, res) => {
   try {
     const { prompt } = req.body;
     if (!prompt) return res.status(400).json({ error: "Missing 'prompt'" });
 
-    const output = await client.textGeneration({
-      provider: "featherless-ai",
-      model: "meta-llama/Llama-3.1-8B",
-      inputs: prompt,
+    const chatCompletion = await gptClient.chat.completions.create({
+      model: "openai/gpt-oss-120b:fireworks-ai",
+      messages: [{ role: "user", content: prompt }]
     });
 
-    res.json({ model: "LLaMA", output });
+    const output = chatCompletion.choices[0].message.content;
+    res.json({ model: "GPT-OSS", output });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Something went wrong." });
+    res.status(500).json({ error: "Something went wrong.", details: err.message });
   }
 });
 
