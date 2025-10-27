@@ -60,4 +60,3 @@ async function test() {
 if (require.main === module) test();
 
 module.exports = { askModel, runFactCheck, runRevision, runSocratic };
-S
