@@ -101,6 +101,27 @@ app.post("/api/ask/gemini", async (req, res) => {
   }
 });
 
+// ==========================
+// Route 4: Mistral
+// ==========================
+app.post("/api/ask/mistral", async (req, res) => {
+  try {
+    const { prompt } = req.body;
+    if (!prompt) return res.status(400).json({ error: "Missing 'prompt'" });
+
+    const chatCompletion = await openaiClient.chat.completions.create({
+      model: "dphn/Dolphin-Mistral-24B-Venice-Edition:featherless-ai",
+      messages: [{ role: "user", content: prompt }]
+    });
+
+    const output = chatCompletion.choices[0].message.content;
+    res.json({ model: "Mistral", output });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Something went wrong.", details: err.message });
+  }
+});
+
 app.listen(3000, () => {
   console.log('Backend running on http://localhost:3000');
 });
