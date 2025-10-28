@@ -3,10 +3,13 @@ const axios = require("axios");
 const { InferenceClient } = require("@huggingface/inference");
 const { GoogleGenAI } = require("@google/genai");
 const { OpenAI } = require("openai");
+const cors = require("cors");
 require("dotenv").config();
 
 const app = express();
 app.use(express.json()); // parse JSON bodies
+
+app.use(cors());
 
 const client = new InferenceClient(process.env.HF_TOKEN);
 // Create the Gemini client (reads API key from GEMINI_API_KEY env variable)
@@ -119,6 +122,19 @@ app.post("/api/ask/mistral", async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Something went wrong.", details: err.message });
+  }
+});
+
+const { runFullCycle } = require("./query");
+
+app.post("/api/fullcycle", async (req, res) => {
+  try {
+    const { topic, level, style } = req.body;
+    const results = await runFullCycle({ topic, level, style });
+    res.json(results);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
   }
 });
 
