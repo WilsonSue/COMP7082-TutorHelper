@@ -1,5 +1,6 @@
 const express = require("express");
 const axios = require("axios");
+const path = require('path');
 const { InferenceClient } = require("@huggingface/inference");
 const { GoogleGenAI } = require("@google/genai");
 const { OpenAI } = require("openai");
@@ -9,7 +10,8 @@ require("dotenv").config();
 const app = express();
 app.use(express.json()); // parse JSON bodies
 
-app.use(cors());
+// app.use(cors());
+app.use(express.static(path.join(__dirname, 'public')));
 
 const client = new InferenceClient(process.env.HF_TOKEN);
 // Create the Gemini client (reads API key from GEMINI_API_KEY env variable)
@@ -136,6 +138,10 @@ app.post("/api/fullcycle", async (req, res) => {
     console.error(err);
     res.status(500).json({ error: err.message });
   }
+});
+
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
 app.listen(3000, () => {
