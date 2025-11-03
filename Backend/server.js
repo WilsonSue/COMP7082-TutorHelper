@@ -36,8 +36,8 @@ app.post("/api/ask/deepseek", async (req, res) => {
       messages: [{ role: "user", content: prompt }],
     });
 
-    const answer = chatCompletion.choices[0].message.content;
-    res.json({ model: "DeepSeek", answer });
+    const output = chatCompletion.choices[0].message.content;
+    res.json({ model: "DeepSeek", output });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Something went wrong." });
@@ -100,7 +100,8 @@ app.post("/api/ask/gemini", async (req, res) => {
     });
 
     // The generated text is in response.text
-    res.json({ model: "Gemini", output: response.text });
+    const output = response.text;
+    res.json({ model: "Gemini", output });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Something went wrong.", details: err.message });

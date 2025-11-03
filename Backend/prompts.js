@@ -36,7 +36,7 @@ Output Guidelines:
 `;
 }
 
-function buildFactCheckerPrompt({ topic, original_ai_output, detail_level }) {
+function buildFactCheckerPrompt({ topic, original_ai_output, detail_level = "moderate" }) {
   return `
 You are an AI fact checker. Your task is to evaluate the accuracy, completeness, and reliability
 of information produced by another AI.
