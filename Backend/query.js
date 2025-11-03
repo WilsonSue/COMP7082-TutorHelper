@@ -11,7 +11,7 @@ const BASE_URL = "http://localhost:3000";
 async function askModel(model, prompt) {
   try {
     const res = await axios.post(`${BASE_URL}/api/ask/${model}`, { prompt });
-    return res.data.output || res.data.answer || res.data;
+    return res.data.output;
   } catch (err) {
     console.error("Error calling model", model, err.response?.data || err.message);
     throw err;
@@ -27,10 +27,12 @@ async function startTopic({ topic, level = "Undergraduate", style = "gentle", ma
 async function askQuestion({ topic, question, mainModel, factCheckModels }) {
   const mainPrompt = `${topic ? `Topic ${topic}\n` : ""}User question ${question}`;
   const mainOutput = await askModel(mainModel, mainPrompt);
+  // console.log(`[askQuestion] Main model output (${mainModel}):\n`, mainOutput);
 
   const checks = await Promise.all(
     factCheckModels.map(async (m) => {
-      const prompt = buildFactCheckerPrompt({ topic, output: mainOutput });
+      const prompt = buildFactCheckerPrompt({ topic, original_ai_output: mainOutput });
+      console.log(`fact check prompt (${m}):\n`, prompt);
       const check = await askModel(m, prompt);
       return { model: m, check };
     })
