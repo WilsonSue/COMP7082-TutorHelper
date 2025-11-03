@@ -5,6 +5,7 @@ const { InferenceClient } = require("@huggingface/inference");
 const { GoogleGenAI } = require("@google/genai");
 const { OpenAI } = require("openai");
 const cors = require("cors");
+const { startTopic, askQuestion, getHint } = require("./query");
 require("dotenv").config();
 
 const app = express();
@@ -127,18 +128,44 @@ app.post("/api/ask/mistral", async (req, res) => {
   }
 });
 
-const { runFullCycle } = require("./query");
+// ==========================
+// Frontend API Endpoints
+// ==========================
 
-app.post("/api/fullcycle", async (req, res) => {
+app.post("/api/startTopic", async (req, res) => {
+  const { topic } = req.body;
   try {
-    const { topic, level, style } = req.body;
-    const results = await runFullCycle({ topic, level, style });
-    res.json(results);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
-  }
+    const result = await startTopic({ topic });
+    res.json(result);
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
+
+app.post("/api/askQuestion", async (req, res) => {
+  const { topic, question } = req.body;
+  try {
+    const result = await askQuestion({ topic, question });
+    res.json(result);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post("/api/hint", async (req, res) => {
+  const { topic } = req.body;
+  try {
+    const result = await getHint({ topic });
+    res.json(result);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// app.post("/api/fullcycle", async (req, res) => {
+//   try {
+//     const { topic, level, style } = req.body;
+//     const results = await runFullCycle({ topic, level, style });
+//     res.json(results);
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ error: err.message });
+//   }
+// });
 
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));

@@ -8,28 +8,6 @@ const {
 
 const BASE_URL = "http://localhost:3000";
 
-// ordered model list
-const MODEL_ORDER = ["deepseek", "mistral", "gpt", "gemini"];
-
-// default selection
-let MAIN_MODEL = "gpt";
-let FACTCHECK_MODELS = ["mistral", "gemini"];
-
-function setModels(selected) {
-  const index = MODEL_ORDER.indexOf(selected);
-  if (index === -1) {
-    console.warn("Selected model not in list, keeping default");
-    return;
-  }
-
-  MAIN_MODEL = selected;
-
-  // pick previous and next in the list, wrapping around
-  const left = MODEL_ORDER[(index - 1 + MODEL_ORDER.length) % MODEL_ORDER.length];
-  const right = MODEL_ORDER[(index + 1) % MODEL_ORDER.length];
-  FACTCHECK_MODELS = [left, right];
-}
-
 async function askModel(model, prompt) {
   try {
     const res = await axios.post(`${BASE_URL}/api/ask/${model}`, { prompt });
@@ -83,7 +61,6 @@ async function getHint({ topic, level = "Undergraduate", style = "gentle" }) {
 }
 
 module.exports = {
-  setModels,
   askModel,
   startTopic,
   askQuestion,

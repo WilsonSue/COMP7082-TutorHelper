@@ -1,5 +1,22 @@
 const outputBox = document.getElementById("output");
 
+// ordered model list
+const MODEL_ORDER = ["deepseek", "mistral", "gpt", "gemini"];
+let MAIN_MODEL = "gpt";
+let FACTCHECK_MODELS = ["mistral", "gemini"];
+
+function setModels(selected) {
+  const index = MODEL_ORDER.indexOf(selected);
+  if (index === -1) {
+    console.warn("Selected model not in list, keeping default");
+    return;
+  }
+  MAIN_MODEL = selected;
+  const left = MODEL_ORDER[(index - 1 + MODEL_ORDER.length) % MODEL_ORDER.length];
+  const right = MODEL_ORDER[(index + 1) % MODEL_ORDER.length];
+  FACTCHECK_MODELS = [left, right];
+}
+
 async function postData(url, data) {
   const res = await fetch(url, {
     method: "POST",
@@ -13,6 +30,11 @@ async function postData(url, data) {
 function display(data) {
   outputBox.textContent = JSON.stringify(data, null, 2);
 }
+
+// Update models when the dropdown changes
+document.getElementById("modelSelect").addEventListener("change", (e) => {
+  setModels(e.target.value);
+});
 
 // start topic
 document.getElementById("startBtn").addEventListener("click", async () => {
