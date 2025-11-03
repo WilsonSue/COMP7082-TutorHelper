@@ -26,13 +26,13 @@ const gptClient = new OpenAI({
 // ==========================
 app.post("/api/ask/deepseek", async (req, res) => {
   try {
-    const { question } = req.body;
-    if (!question) return res.status(400).json({ error: "Missing 'question'" });
+    const { prompt } = req.body;
+    if (!prompt) return res.status(400).json({ error: "Missing 'prompt'" });
 
     const chatCompletion = await client.chatCompletion({
       provider: "fireworks-ai",
       model: "deepseek-ai/DeepSeek-V3.1",
-      messages: [{ role: "user", content: question }],
+      messages: [{ role: "user", content: prompt }],
     });
 
     const answer = chatCompletion.choices[0].message.content;
@@ -114,7 +114,7 @@ app.post("/api/ask/mistral", async (req, res) => {
     const { prompt } = req.body;
     if (!prompt) return res.status(400).json({ error: "Missing 'prompt'" });
 
-    const chatCompletion = await openaiClient.chat.completions.create({
+    const chatCompletion = await gptClient.chat.completions.create({
       model: "dphn/Dolphin-Mistral-24B-Venice-Edition:featherless-ai",
       messages: [{ role: "user", content: prompt }]
     });
@@ -140,8 +140,8 @@ app.post("/api/fullcycle", async (req, res) => {
   }
 });
 
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 app.listen(3000, () => {

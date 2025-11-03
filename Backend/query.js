@@ -1,76 +1,91 @@
 const axios = require("axios");
-const { buildFactCheckerPrompt, buildRevisionPrompt, buildSocraticPrompt } = require("./prompts");
+const { 
+  buildStartingPrompt, 
+  buildFactCheckerPrompt, 
+  buildRevisionPrompt, 
+  buildSocraticPrompt 
+} = require("./prompts");
 
 const BASE_URL = "http://localhost:3000";
+
+// ordered model list
+const MODEL_ORDER = ["deepseek", "mistral", "gpt", "gemini"];
+
+// default selection
+let MAIN_MODEL = "gpt";
+let FACTCHECK_MODELS = ["mistral", "gemini"];
+
+function setModels(selected) {
+  const index = MODEL_ORDER.indexOf(selected);
+  if (index === -1) {
+    console.warn("Selected model not in list, keeping default");
+    return;
+  }
+
+  MAIN_MODEL = selected;
+
+  // pick previous and next in the list, wrapping around
+  const left = MODEL_ORDER[(index - 1 + MODEL_ORDER.length) % MODEL_ORDER.length];
+  const right = MODEL_ORDER[(index + 1) % MODEL_ORDER.length];
+  FACTCHECK_MODELS = [left, right];
+}
 
 async function askModel(model, prompt) {
   try {
     const res = await axios.post(`${BASE_URL}/api/ask/${model}`, { prompt });
     return res.data.output || res.data.answer || res.data;
   } catch (err) {
-    console.error("Error calling model:", model, err.response?.data || err.message);
+    console.error("Error calling model", model, err.response?.data || err.message);
     throw err;
   }
 }
 
-async function runFactCheck({ topic, aiOutput, detailLevel = "in depth" }) {
-  const prompt = buildFactCheckerPrompt({
-    topic,
-    output: aiOutput,
-    detail_level: detailLevel,
-  });
-  return await askModel("gpt", prompt);
+async function startTopic({ topic, level = "Undergraduate", style = "gentle" }) {
+  const prompt = buildStartingPrompt({ topic, level, style });
+  const output = await askModel(MAIN_MODEL, prompt);
+  return { model: MAIN_MODEL, output };
 }
 
-async function runRevision({ topic, originalOutput, feedback, revisionLevel = "minor corrections" }) {
-  const prompt = buildRevisionPrompt({
+async function askQuestion({ topic, question }) {
+  const mainPrompt = `${topic ? `Topic ${topic}\n` : ""}User question ${question}`;
+  const mainOutput = await askModel(MAIN_MODEL, mainPrompt);
+
+  const checks = await Promise.all(
+    FACTCHECK_MODELS.map(async (m) => {
+      const prompt = buildFactCheckerPrompt({ topic, output: mainOutput });
+      const check = await askModel(m, prompt);
+      return { model: m, check };
+    })
+  );
+
+  const combinedFeedback = checks.map(c => `${c.model} ${c.check}`).join("\n\n");
+  const revisionPrompt = buildRevisionPrompt({
     topic,
-    original_output: originalOutput,
-    feedback,
-    revision_level: revisionLevel,
+    originalOutput: mainOutput,
+    feedback: combinedFeedback,
+    revision_level: "moderate improvements"
   });
-  return await askModel("gpt", prompt);
+
+  const revised = await askModel(MAIN_MODEL, revisionPrompt);
+
+  return {
+    model: MAIN_MODEL,
+    initial: mainOutput,
+    factChecks: checks,
+    revised
+  };
 }
 
-async function runSocratic({ topic, level = "High School", style = "gentle" }) {
+async function getHint({ topic, level = "Undergraduate", style = "gentle" }) {
   const prompt = buildSocraticPrompt({ topic, level, style });
-  return await askModel("gpt", prompt);
+  const output = await askModel(MAIN_MODEL, prompt);
+  return { model: MAIN_MODEL, hint: output };
 }
-
-async function runFullCycle({ topic, level = "Undergraduate", style = "philosophical" }) {
-  const result = {};
-
-  console.log("Step 1: Asking model");
-  result.initial = await askModel("gpt", `Explain ${topic} simply.`);
-
-  console.log("Step 2: Fact checking");
-  result.feedback = await runFactCheck({ topic, aiOutput: result.initial });
-
-  console.log("Step 3: Revising");
-  result.revision = await runRevision({
-    topic,
-    originalOutput: result.initial,
-    feedback: result.feedback,
-  });
-
-  console.log("Step 4: Socratic questioning");
-  result.hint = await runSocratic({ topic, level, style });
-
-  return result;
-}
-
-async function test() {
-  const topic = "machine learning";
-  const results = await runFullCycle({ topic });
-  console.log(JSON.stringify(results, null, 2));
-}
-
-if (require.main === module) test();
 
 module.exports = {
+  setModels,
   askModel,
-  runFactCheck,
-  runRevision,
-  runSocratic,
-  runFullCycle,
+  startTopic,
+  askQuestion,
+  getHint
 };
