@@ -132,28 +132,47 @@ app.post("/api/ask/mistral", async (req, res) => {
 // Frontend API Endpoints
 // ==========================
 
+// ordered model list
+const MODEL_ORDER = ["deepseek", "mistral", "gpt", "gemini"];
+
+// helper to pick fact checkers around main model
+function getFactCheckModels(mainModel) {
+  const index = MODEL_ORDER.indexOf(mainModel);
+  if (index === -1) return ["mistral", "gpt"]; // default
+  const left = MODEL_ORDER[(index - 1 + MODEL_ORDER.length) % MODEL_ORDER.length];
+  const right = MODEL_ORDER[(index + 1) % MODEL_ORDER.length];
+  return [left, right];
+}
+
 app.post("/api/startTopic", async (req, res) => {
-  const { topic } = req.body;
+  const { topic, model } = req.body;
   try {
-    const result = await startTopic({ topic });
+    const result = await startTopic({ topic, mainModel: model });
     res.json(result);
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.post("/api/askQuestion", async (req, res) => {
-  const { topic, question } = req.body;
+  const { topic, question, model } = req.body;
   try {
-    const result = await askQuestion({ topic, question });
+    const factCheckModels = getFactCheckModels(model);
+    const result = await askQuestion({ topic, question, mainModel: model, factCheckModels });
     res.json(result);
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.post("/api/hint", async (req, res) => {
-  const { topic } = req.body;
+  const { topic, model } = req.body;
   try {
-    const result = await getHint({ topic });
+    const result = await getHint({ topic, mainModel: model });
     res.json(result);
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // app.post("/api/fullcycle", async (req, res) => {
