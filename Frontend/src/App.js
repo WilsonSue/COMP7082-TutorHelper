@@ -7,6 +7,7 @@ import LoginPage from './components/LoginPage';
 import SignupPage from './components/SignupPage';
 import AIPrompt from './components/AIPromptPage';
 import Home from './components/HomePage';
+import SettingsPage from './components/SettingsPage';
 
 // Create a theme
 const theme = createTheme({
@@ -29,6 +30,7 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/home" element={<Home />} />
+          <Route path="/settings" element={<SettingsPage />} />
           <Route path="/ai-prompt" element={<AIPrompt />} />
         </Routes>
       </BrowserRouter>

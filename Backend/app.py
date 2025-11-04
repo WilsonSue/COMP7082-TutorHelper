@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from models import db, User
+from models import db, User, UserPreference
 from config import Config
 
 app = Flask(__name__)
@@ -74,6 +74,59 @@ def get_users():
     return jsonify({
         'users': [user.to_dict() for user in users]
     }), 200
+
+
+@app.route('/api/user/<int:user_id>/preferences', methods=['GET'])
+def get_user_preferences(user_id):
+    try:
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+
+        prefs = UserPreference.query.get(user_id)
+        if not prefs:
+            # return default preferences if none exist yet
+            prefs = UserPreference(
+                user_id=user_id,
+                visual=False,
+                adhd=False,
+                due_dates=False,
+                onboarding_complete=False,
+            )
+            db.session.add(prefs)
+            db.session.commit()
+
+        return jsonify(prefs.to_dict()), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/user/<int:user_id>/preferences', methods=['PUT', 'POST'])
+def upsert_user_preferences(user_id):
+    try:
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+
+        data = request.get_json() or {}
+        prefs = UserPreference.query.get(user_id)
+        if not prefs:
+            prefs = UserPreference(user_id=user_id)
+            db.session.add(prefs)
+
+        if 'visual' in data:
+            prefs.visual = bool(data['visual'])
+        if 'adhd' in data:
+            prefs.adhd = bool(data['adhd'])
+        if 'due_dates' in data:
+            prefs.due_dates = bool(data['due_dates'])
+        if 'onboarding_complete' in data:
+            prefs.onboarding_complete = bool(data['onboarding_complete'])
+
+        db.session.commit()
+        return jsonify({'message': 'Preferences saved', 'preferences': prefs.to_dict()}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 with app.app_context():
     db.create_all()
