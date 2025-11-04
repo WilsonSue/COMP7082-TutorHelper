@@ -7,19 +7,64 @@ import {
   Typography,
   Link,
   Paper,
+  Alert,
+  Snackbar,
 } from '@mui/material';
 import SchoolIcon from '@mui/icons-material/School';
 import { useNavigate } from 'react-router-dom';
 
+const API_BASE = 'http://localhost:5000/api';
+
 function LoginPage() {
-  const [email, setEmail] = useState('');
+  const [login, setLogin] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [alert, setAlert] = useState({
+    open: false,
+    message: '',
+    severity: 'success',
+  });
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
+  const showAlert = (message, severity) => {
+    setAlert({ open: true, message, severity });
+  };
+
+  const handleCloseAlert = () => {
+    setAlert({ ...alert, open: false });
+  };
+
+  const handleLogin = async (e) => {
     e.preventDefault();
-    console.log('Login:', { email, password });
-    // Add your login API call here
+
+    setLoading(true);
+
+    try {
+      const response = await fetch(`${API_BASE}/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ login, password }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        showAlert('Login successful! Redirecting...', 'success');
+        localStorage.setItem('user', JSON.stringify(data.user));
+        setTimeout(() => {
+          navigate('/home'); // Update this to your home route
+        }, 1500);
+      } else {
+        showAlert(data.error || 'Login failed', 'error');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      showAlert('An error occurred during login. Please try again.', 'error');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -75,10 +120,10 @@ function LoginPage() {
           <Box component="form" onSubmit={handleLogin} sx={{ width: '100%' }}>
             <TextField
               fullWidth
-              placeholder="Email Address"
+              placeholder="Email or Username"
               variant="standard"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              value={login}
+              onChange={(e) => setLogin(e.target.value)}
               sx={{
                 mb: 3,
                 '& .MuiInput-underline:before': {
@@ -120,6 +165,7 @@ function LoginPage() {
               type="submit"
               fullWidth
               variant="contained"
+              disabled={loading}
               sx={{
                 bgcolor: '#2c3e50',
                 color: 'white',
@@ -132,9 +178,12 @@ function LoginPage() {
                 '&:hover': {
                   bgcolor: '#1a252f',
                 },
+                '&:disabled': {
+                  bgcolor: '#bdc3c7',
+                },
               }}
             >
-              Login
+              {loading ? 'Logging in...' : 'Login'}
             </Button>
 
             <Typography variant="body2" align="center" sx={{ color: '#666' }}>
@@ -158,6 +207,22 @@ function LoginPage() {
           </Box>
         </Paper>
       </Container>
+
+      {/* Alert Snackbar */}
+      <Snackbar
+        open={alert.open}
+        autoHideDuration={6000}
+        onClose={handleCloseAlert}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={handleCloseAlert}
+          severity={alert.severity}
+          sx={{ width: '100%' }}
+        >
+          {alert.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }
