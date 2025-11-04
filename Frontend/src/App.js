@@ -1,9 +1,12 @@
-import './App.css';
+import './style.css';
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
+
 import LoginPage from './components/LoginPage';
 import SignupPage from './components/SignupPage';
+import AIPrompt from './components/AIPromptPage';
+import Home from './components/HomePage';
 
 // Create a theme
 const theme = createTheme({
@@ -25,6 +28,8 @@ function App() {
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
+          <Route path="/home" element={<Home />} />
+          <Route path="/ai-prompt" element={<AIPrompt />} />
         </Routes>
       </BrowserRouter>
     </ThemeProvider>
