@@ -6,12 +6,11 @@ import {
   Button,
   Typography,
   Link,
-  Paper,
-  Alert,
   Snackbar,
+  Alert,
 } from '@mui/material';
-import SchoolIcon from '@mui/icons-material/School';
 import { useNavigate } from 'react-router-dom';
+import Header from './Header';
 
 const API_BASE = 'http://localhost:5000/api';
 
@@ -81,9 +80,9 @@ function SignupPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          username: username,
-          email: email,
-          password: password,
+          username,
+          email,
+          password,
         }),
       });
 
@@ -98,14 +97,11 @@ function SignupPage() {
           navigate('/login');
         }, 2000);
       } else {
-        showAlert(data.error || 'Registration failed', 'error');
+        showAlert(data.error || 'Signup failed. Please try again.', 'error');
       }
     } catch (error) {
-      console.error('Error:', error);
-      showAlert(
-        'An error occurred during registration. Please try again.',
-        'error'
-      );
+      console.error('Signup error:', error);
+      showAlert('Network error. Please try again later.', 'error');
     } finally {
       setLoading(false);
     }
@@ -115,59 +111,46 @@ function SignupPage() {
     <Box
       sx={{
         minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        bgcolor: '#f5f5f5',
+        bgcolor: 'white',
+        px: 2,
       }}
     >
       <Container maxWidth="xs">
-        <Paper
-          elevation={0}
+        <Box
           sx={{
-            p: 4,
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            bgcolor: 'white',
-            borderRadius: 2,
           }}
         >
-          {/* Logo and Title */}
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-            <Typography
-              variant="h5"
-              sx={{
-                fontWeight: 600,
-                color: '#1a5f7a',
-                mr: 1,
-              }}
-            >
-              Tutor Bot
-            </Typography>
-            <SchoolIcon sx={{ fontSize: 32, color: '#1a5f7a' }} />
-          </Box>
+          {/* Header Component */}
+          <Header />
 
           {/* Signup Text */}
           <Typography
-            variant="h5"
+            variant="h4"
             sx={{
-              fontWeight: 600,
+              fontWeight: 500,
               mb: 4,
-              color: '#333',
+              color: '#1a5f7a',
             }}
           >
             Signup
           </Typography>
 
           {/* Signup Form */}
-          <Box component="form" onSubmit={handleSignup} sx={{ width: '100%' }}>
+          <Box
+            component="form"
+            onSubmit={handleSignup}
+            sx={{ width: '100%', maxWidth: '400px' }}
+          >
             <TextField
               fullWidth
               placeholder="Username"
               variant="standard"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
+              required
               sx={{
                 mb: 3,
                 '& .MuiInput-underline:before': {
@@ -187,8 +170,10 @@ function SignupPage() {
               fullWidth
               placeholder="Email Address"
               variant="standard"
+              type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              required
               sx={{
                 mb: 3,
                 '& .MuiInput-underline:before': {
@@ -211,6 +196,7 @@ function SignupPage() {
               variant="standard"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              required
               sx={{
                 mb: 3,
                 '& .MuiInput-underline:before': {
@@ -233,6 +219,7 @@ function SignupPage() {
               variant="standard"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
+              required
               sx={{
                 mb: 4,
                 '& .MuiInput-underline:before': {
@@ -283,6 +270,7 @@ function SignupPage() {
                   color: '#1976d2',
                   textDecoration: 'none',
                   cursor: 'pointer',
+                  fontWeight: 500,
                   '&:hover': {
                     textDecoration: 'underline',
                   },
@@ -292,7 +280,7 @@ function SignupPage() {
               </Link>
             </Typography>
           </Box>
-        </Paper>
+        </Box>
       </Container>
 
       {/* Alert Snackbar */}

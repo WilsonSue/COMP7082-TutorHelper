@@ -6,17 +6,16 @@ import {
   Button,
   Typography,
   Link,
-  Paper,
-  Alert,
   Snackbar,
+  Alert,
 } from '@mui/material';
-import SchoolIcon from '@mui/icons-material/School';
 import { useNavigate } from 'react-router-dom';
+import Header from './Header';
 
 const API_BASE = 'http://localhost:5000/api';
 
 function LoginPage() {
-  const [login, setLogin] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [alert, setAlert] = useState({
@@ -36,7 +35,6 @@ function LoginPage() {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-
     setLoading(true);
 
     try {
@@ -45,23 +43,30 @@ function LoginPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ login, password }),
+        body: JSON.stringify({
+          login: email,
+          password,
+        }),
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        showAlert('Login successful! Redirecting...', 'success');
         localStorage.setItem('user', JSON.stringify(data.user));
+
+        showAlert('Login successful! Redirecting...', 'success');
         setTimeout(() => {
-          navigate('/home'); // Update this to your home route
+          navigate('/home');
         }, 1500);
       } else {
-        showAlert(data.error || 'Login failed', 'error');
+        showAlert(
+          data.error || 'Login failed. Please check your credentials.',
+          'error'
+        );
       }
     } catch (error) {
-      console.error('Error:', error);
-      showAlert('An error occurred during login. Please try again.', 'error');
+      console.error('Login error:', error);
+      showAlert('Network error. Please try again later.', 'error');
     } finally {
       setLoading(false);
     }
@@ -71,59 +76,47 @@ function LoginPage() {
     <Box
       sx={{
         minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        bgcolor: '#f5f5f5',
+        bgcolor: 'white',
+        px: 2,
       }}
     >
       <Container maxWidth="xs">
-        <Paper
-          elevation={0}
+        <Box
           sx={{
-            p: 4,
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            bgcolor: 'white',
-            borderRadius: 2,
           }}
         >
-          {/* Logo and Title */}
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-            <Typography
-              variant="h5"
-              sx={{
-                fontWeight: 600,
-                color: '#1a5f7a',
-                mr: 1,
-              }}
-            >
-              Tutor Bot
-            </Typography>
-            <SchoolIcon sx={{ fontSize: 32, color: '#1a5f7a' }} />
-          </Box>
+          {/* Header Component */}
+          <Header />
 
           {/* Welcome Text */}
           <Typography
-            variant="h5"
+            variant="h4"
             sx={{
               fontWeight: 600,
               mb: 4,
-              color: '#333',
+              color: '#1a5f7a',
             }}
           >
             Welcome Back!
           </Typography>
 
           {/* Login Form */}
-          <Box component="form" onSubmit={handleLogin} sx={{ width: '100%' }}>
+          <Box
+            component="form"
+            onSubmit={handleLogin}
+            sx={{ width: '100%', maxWidth: '400px' }}
+          >
             <TextField
               fullWidth
-              placeholder="Email or Username"
+              placeholder="Email Address"
               variant="standard"
-              value={login}
-              onChange={(e) => setLogin(e.target.value)}
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
               sx={{
                 mb: 3,
                 '& .MuiInput-underline:before': {
@@ -146,6 +139,7 @@ function LoginPage() {
               variant="standard"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              required
               sx={{
                 mb: 4,
                 '& .MuiInput-underline:before': {
@@ -196,6 +190,7 @@ function LoginPage() {
                   color: '#1976d2',
                   textDecoration: 'none',
                   cursor: 'pointer',
+                  fontWeight: 500,
                   '&:hover': {
                     textDecoration: 'underline',
                   },
@@ -205,7 +200,7 @@ function LoginPage() {
               </Link>
             </Typography>
           </Box>
-        </Paper>
+        </Box>
       </Container>
 
       {/* Alert Snackbar */}

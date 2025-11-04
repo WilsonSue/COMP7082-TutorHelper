@@ -25,3 +25,22 @@ class User(db.Model):
             'email': self.email,
             'created_at': self.created_at.isoformat()
         }
+
+
+class UserPreference(db.Model):
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), primary_key=True)
+    visual = db.Column(db.Boolean, default=False, nullable=False)
+    adhd = db.Column(db.Boolean, default=False, nullable=False)
+    due_dates = db.Column(db.Boolean, default=False, nullable=False)
+    onboarding_complete = db.Column(db.Boolean, default=False, nullable=False)
+
+    user = db.relationship('User', backref=db.backref('preferences', uselist=False))
+
+    def to_dict(self):
+        return {
+            'user_id': self.user_id,
+            'visual': self.visual,
+            'adhd': self.adhd,
+            'due_dates': self.due_dates,
+            'onboarding_complete': self.onboarding_complete,
+        }
