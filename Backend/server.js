@@ -6,6 +6,7 @@ const { GoogleGenAI } = require("@google/genai");
 const { OpenAI } = require("openai");
 const cors = require("cors");
 const { startTopic, askQuestion, getHint } = require("./query");
+const db = require("./database");
 require("dotenv").config();
 
 const app = express();
@@ -186,6 +187,46 @@ app.post("/api/hint", async (req, res) => {
 //     res.status(500).json({ error: err.message });
 //   }
 // });
+
+app.post("/api/register", async (req, res) => {
+  const { username, email, password } = req.body;
+
+  try {
+    await db.insertUser(username, email, password);
+  } catch (error) {
+    if (error.code === "SQLITE_CONSTRAINT_UNIQUE") {
+      res.status(400).json({ error: error.includes("email") ? "Email linked to an existing account" : "Username already in use" });
+    } else if (error.code === "SQLITE_CONSTRAINT_NOTNULL") {
+      blankfields = "";
+
+      if (error.message.includes("email")) blankFields += "email";
+      if (error.message.includes("username")) blankFields += ", username";
+      if (error.message.includes("password")) blankfields += ", password";
+
+      res.status(400).json({ error: `One or more fields are blank: ${blankFields}` });
+    } else {
+      res.status(500).json({ error: "Encountered an error while trying to register you. Please try again later" });
+    }
+  }
+});
+
+app.post("/api/login", async (req, res) => {
+  const { email, password } = req.body;
+  
+  try {
+    const passed = db.loginUser(email, password);
+    
+    if (!passed) {
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+    const user = db.getUserByEmail(email);
+    delete user.password;
+
+    return res.status(200).json({ user, message: "Login successful" });
+  } catch (error) {
+    res.status(401).json({ error: "Invalid credentials" });
+  }
+});
 
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
