@@ -6,10 +6,9 @@ import {
   Button,
   Typography,
   Link,
-  Paper,
 } from '@mui/material';
-import SchoolIcon from '@mui/icons-material/School';
 import { useNavigate } from 'react-router-dom';
+import Header from './Header';
 
 function SignupPage() {
   const [email, setEmail] = useState('');
@@ -19,64 +18,50 @@ function SignupPage() {
   const handleSignup = (e) => {
     e.preventDefault();
     console.log('Signup:', { email, password });
-    // Add your signup API call here
   };
 
   return (
     <Box
       sx={{
         minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        bgcolor: '#f5f5f5',
+        bgcolor: 'white',
+        px: 2,
       }}
     >
       <Container maxWidth="xs">
-        <Paper
-          elevation={0}
+        <Box
           sx={{
-            p: 4,
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            bgcolor: 'white',
-            borderRadius: 2,
           }}
         >
-          {/* Logo and Title */}
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-            <Typography
-              variant="h5"
-              sx={{
-                fontWeight: 600,
-                color: '#1a5f7a',
-                mr: 1,
-              }}
-            >
-              Tutor Bot
-            </Typography>
-            <SchoolIcon sx={{ fontSize: 32, color: '#1a5f7a' }} />
-          </Box>
+          {/* Header Component */}
+          <Header />
 
           {/* Signup Text */}
           <Typography
-            variant="h5"
+            variant="h4"
             sx={{
-              fontWeight: 600,
+              fontWeight: 500,
               mb: 4,
-              color: '#333',
+              color: '#1a5f7a',
             }}
           >
             Signup
           </Typography>
 
           {/* Signup Form */}
-          <Box component="form" onSubmit={handleSignup} sx={{ width: '100%' }}>
+          <Box
+            component="form"
+            onSubmit={handleSignup}
+            sx={{ width: '100%', maxWidth: '400px' }}
+          >
             <TextField
               fullWidth
               placeholder="Email Address"
               variant="standard"
+              type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               sx={{
@@ -147,6 +132,7 @@ function SignupPage() {
                   color: '#1976d2',
                   textDecoration: 'none',
                   cursor: 'pointer',
+                  fontWeight: 500,
                   '&:hover': {
                     textDecoration: 'underline',
                   },
@@ -156,7 +142,7 @@ function SignupPage() {
               </Link>
             </Typography>
           </Box>
-        </Paper>
+        </Box>
       </Container>
     </Box>
   );
