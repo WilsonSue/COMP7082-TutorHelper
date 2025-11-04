@@ -56,7 +56,7 @@ function LoginPage() {
 
         showAlert('Login successful! Redirecting...', 'success');
         setTimeout(() => {
-          navigate('/dashboard'); // Update with your dashboard route
+          navigate('/home');
         }, 1500);
       } else {
         showAlert(
