@@ -6,6 +6,8 @@ import {
   Button,
   Typography,
   Link,
+  Snackbar,
+  Alert,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import Header from './Header';
@@ -64,7 +66,45 @@ function SignupPage() {
 
   const handleSignup = async (e) => {
     e.preventDefault();
-    console.log('Signup:', { email, password });
+
+    if (!validateForm()) {
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await fetch(`${API_BASE}/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username,
+          email,
+          password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        showAlert(
+          'Account created successfully! Redirecting to login...',
+          'success'
+        );
+        setTimeout(() => {
+          navigate('/login');
+        }, 2000);
+      } else {
+        showAlert(data.error || 'Signup failed. Please try again.', 'error');
+      }
+    } catch (error) {
+      console.error('Signup error:', error);
+      showAlert('Network error. Please try again later.', 'error');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -110,6 +150,7 @@ function SignupPage() {
               variant="standard"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
+              required
               sx={{
                 mb: 3,
                 '& .MuiInput-underline:before': {
@@ -132,6 +173,7 @@ function SignupPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              required
               sx={{
                 mb: 3,
                 '& .MuiInput-underline:before': {
@@ -154,6 +196,7 @@ function SignupPage() {
               variant="standard"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              required
               sx={{
                 mb: 3,
                 '& .MuiInput-underline:before': {
@@ -176,6 +219,7 @@ function SignupPage() {
               variant="standard"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
+              required
               sx={{
                 mb: 4,
                 '& .MuiInput-underline:before': {

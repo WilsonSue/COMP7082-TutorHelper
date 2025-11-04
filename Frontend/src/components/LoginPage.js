@@ -6,6 +6,8 @@ import {
   Button,
   Typography,
   Link,
+  Snackbar,
+  Alert,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import Header from './Header';
@@ -13,7 +15,7 @@ import Header from './Header';
 const API_BASE = 'http://localhost:5000/api';
 
 function LoginPage() {
-  const [login, setLogin] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [alert, setAlert] = useState({
@@ -33,7 +35,41 @@ function LoginPage() {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    console.log('Login:', { email, password });
+    setLoading(true);
+
+    try {
+      const response = await fetch(`${API_BASE}/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          login: email,
+          password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        localStorage.setItem('user', JSON.stringify(data.user));
+
+        showAlert('Login successful! Redirecting...', 'success');
+        setTimeout(() => {
+          navigate('/dashboard'); // Update with your dashboard route
+        }, 1500);
+      } else {
+        showAlert(
+          data.error || 'Login failed. Please check your credentials.',
+          'error'
+        );
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      showAlert('Network error. Please try again later.', 'error');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -75,11 +111,12 @@ function LoginPage() {
           >
             <TextField
               fullWidth
-              placeholder="Email or Username"
+              placeholder="Email Address"
               variant="standard"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              required
               sx={{
                 mb: 3,
                 '& .MuiInput-underline:before': {
@@ -102,6 +139,7 @@ function LoginPage() {
               variant="standard"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              required
               sx={{
                 mb: 4,
                 '& .MuiInput-underline:before': {
@@ -142,11 +180,7 @@ function LoginPage() {
               {loading ? 'Logging in...' : 'Login'}
             </Button>
 
-            <Typography
-              variant="body2"
-              align="center"
-              sx={{ color: '#1a5f7a' }}
-            >
+            <Typography variant="body2" align="center" sx={{ color: '#666' }}>
               Don't have an Account?{' '}
               <Link
                 component="button"
