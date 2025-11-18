@@ -8,39 +8,39 @@ db.exec(`
     username TEXT UNIQUE NOT NULL,
     email TEXT UNIQUE NOT NULL, 
     password TEXT NOT NULL,
-    dateCreated TEXT
+    date_created TEXT
   );
 
   CREATE TABLE IF NOT EXISTS conversations (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    userId INTEGER NOT NULL,
-    dateCreated TEXT,
+    user_id INTEGER NOT NULL,
+    date_created TEXT,
     CONSTRAINT fk_user
-      FOREIGN KEY(userId) REFERENCES users(id) ON DELETE CASCADE
+      FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
   );
 
   CREATE TABLE IF NOT EXISTS messages (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    userId INTEGER NOT NULL,
-    conversationId INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    conversation_id INTEGER NOT NULL,
     message TEXT NOT NULL,
-    fromUser INTEGER NOT NULL,
-    dateCreated TEXT,
+    from_user INTEGER NOT NULL,
+    date_created TEXT,
     CONSTRAINT fk_user
-      FOREIGN KEY(userId) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
     CONSTRAINT fk_convo
-      FOREIGN KEY(conversationId) REFERENCES conversations(id) ON DELETE CASCADE
+      FOREIGN KEY(conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
   );
 
   CREATE TABLE IF NOT EXISTS preferences (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    userId INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
     visual INTEGER NOT NULL,
     adhd INTEGER NOT NULL,
-    dueDates INTEGER NOT NULL,
-    onboarding INTEGER NOT NULL,
+    due_dates INTEGER NOT NULL,
+    onboarding_complete INTEGER NOT NULL,
     CONSTRAINT fk_user
-      FOREIGN KEY(userId) REFERENCES users(id) ON DELETE CASCADE
+      FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
   );
 `);
 
@@ -50,7 +50,7 @@ async function insertUser(username, email, password) {
   try {
     const hashedPassword = await argon2.hash(password);
     const stmt = db.prepare(`
-      INSERT INTO users (username, email, password, dateCreated)
+      INSERT INTO users (username, email, password, date_created)
       VALUES (?, ?, ?, ?)
     `);
     const result = stmt.run(username, email, hashedPassword, new Date().toISOString());
@@ -103,7 +103,7 @@ function deleteUser(id) {
 
 function createConversation(userId) {
   const stmt = db.prepare(`
-    INSERT INTO conversations (userId, dateCreated)
+    INSERT INTO conversations (userId, date_created)
     VALUES (?, ?)
   `);
   const result = stmt.run(userId, new Date().toISOString());
@@ -116,7 +116,7 @@ function getConversationById(id) {
 
 function getConversationsByUserId(userId) {
   return db
-    .prepare(`SELECT * FROM conversations WHERE userId = ? ORDER BY id ASC`)
+    .prepare(`SELECT * FROM conversations WHERE user_id = ? ORDER BY id ASC`)
     .all(userId);
 }
 
@@ -129,7 +129,7 @@ function deleteConversation(id) {
 
 function insertMessage(userId, conversationId, message, fromUser) {
   const stmt = db.prepare(`
-    INSERT INTO messages (userId, conversationId, message, fromUser, dateCreated)
+    INSERT INTO messages (userId, conversationId, message, from_user, date_created)
     VALUES (?, ?, ?, ?, ?)
   `);
   const result = stmt.run(
@@ -148,17 +148,17 @@ function getMessageById(id) {
 
 function getMessagesByConversationId(conversationId) {
   return db
-    .prepare(`SELECT * FROM messages WHERE conversationId = ? ORDER BY id ASC`)
+    .prepare(`SELECT * FROM messages WHERE conversation_id = ? ORDER BY id ASC`)
     .all(conversationId);
 }
 
-function updateMessage(id, { message, fromUser }) {
+function updateMessage(id, { message, from_user }) {
   const existing = getMessageById(id);
   if (!existing) throw new Error(`Message with id ${id} not found`);
 
   const newMessage = message ?? existing.message;
   const newFromUser =
-    typeof fromUser === "boolean" ? (fromUser ? 1 : 0) : existing.fromUser;
+    typeof from_user === "boolean" ? (from_user ? 1 : 0) : existing.fromUser;
 
   const stmt = db.prepare(`
     UPDATE messages
@@ -172,6 +172,47 @@ function updateMessage(id, { message, fromUser }) {
 function deleteMessage(id) {
   const stmt = db.prepare(`DELETE FROM messages WHERE id = ?`);
   return stmt.run(id).changes > 0;
+}
+
+// ==================== PREFERENCES ====================
+
+function insertPreferences({user_id, visual, adhd, due_dates, onboarding_complete }) {
+  const stmt = db.prepare(`
+    INSERT INTO preferences (user_id, visual, adhd, due_dates, onboarding_complete)
+    VALUES (?, ?, ?, ?, ?)`);
+
+    const result = stmt.run(user_id, Number(visual), Number(adhd), Number(due_dates), Number(onboarding_complete));
+    return result.lastInsertRowid;
+}
+
+function getPreferencesById(id) {
+  return db.prepare(`SELECT * FROM preferences WHERE id = ?`).get(id);
+}
+
+function getPreferencesByUserId(userId) {
+  return db.prepare(`SELECT * FROM preferences WHERE user_id = ?`).get(userId);
+}
+
+function updatePreferences(id, { visual, adhd, due_dates, onboarding_complete }) {
+  const existing = getPreferencesById(id);
+  if (!existing) throw new Error(`Preferences with id ${id} not found`);
+
+  const newVisual = visual !== undefined ? visual : existing.visual;
+  const newAdhd = adhd !== undefined ? adhd : existing.adhd;
+  const newDueDates = due_dates !== undefined ? due_dates : existing.dueDates;
+  const newOnboarding = onboarding_complete !== undefined
+    ? onboarding_complete
+    : existing.onboarding_complete;
+
+  const stmt = db.prepare(`
+    UPDATE preferences
+    SET visual = ?, adhd = ?, due_dates = ?, onboarding_complete = ?
+    WHERE id = ?
+  `);
+
+  const result = stmt.run(Number(newVisual), Number(newAdhd), Number(newDueDates), Number(newOnboarding), id);
+
+  return result.changes > 0;
 }
 
 // ==================== EXPORTS ====================
@@ -196,4 +237,9 @@ module.exports = {
   getMessagesByConversationId,
   updateMessage,
   deleteMessage,
+
+  // Preferences
+  insertPreferences,
+  getPreferencesByUserId,
+  updatePreferences
 };
