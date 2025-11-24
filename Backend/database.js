@@ -11,25 +11,28 @@ db.exec(`
     date_created TEXT
   );
 
-  CREATE TABLE IF NOT EXISTS conversations (
+  CREATE TABLE IF NOT EXISTS sessions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    topic TEXT NOT NULL,
     user_id INTEGER NOT NULL,
     date_created TEXT,
     CONSTRAINT fk_user
-      FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+      FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT unique_user_topic
+      UNIQUE (user_id, topic)
   );
 
   CREATE TABLE IF NOT EXISTS messages (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
-    conversation_id INTEGER NOT NULL,
+    session_id INTEGER NOT NULL,
     message TEXT NOT NULL,
     from_user INTEGER NOT NULL,
     date_created TEXT,
     CONSTRAINT fk_user
       FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
     CONSTRAINT fk_convo
-      FOREIGN KEY(conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
+      FOREIGN KEY(session_id) REFERENCES sessions(id) ON DELETE CASCADE
   );
 
   CREATE TABLE IF NOT EXISTS preferences (
@@ -99,42 +102,59 @@ function deleteUser(id) {
   return stmt.run(id).changes > 0;
 }
 
-// ==================== CONVERSATIONS ====================
+// ==================== SESSIONS ====================
 
-function createConversation(userId) {
+function createSession(userId, topic) {
   const stmt = db.prepare(`
-    INSERT INTO conversations (userId, date_created)
-    VALUES (?, ?)
+    INSERT INTO sessions (user_id, topic, date_created)
+    VALUES (?, ?, ?)
   `);
-  const result = stmt.run(userId, new Date().toISOString());
+  const result = stmt.run(userId, topic, new Date().toISOString());
   return result.lastInsertRowid;
 }
 
-function getConversationById(id) {
-  return db.prepare(`SELECT * FROM conversations WHERE id = ?`).get(id);
+function getSessionById(id) {
+  return db.prepare(`SELECT * FROM sessions WHERE id = ?`).get(id);
 }
 
-function getConversationsByUserId(userId) {
+function getSessionByTopic(topic, userId) {
   return db
-    .prepare(`SELECT * FROM conversations WHERE user_id = ? ORDER BY id ASC`)
+    .prepare(`SELECT * FROM sessions WHERE topic = ? AND user_id = ? ORDER BY id ASC`)
+    .get(topic, userId);
+}
+
+function getSessionsByUserId(userId) {
+  return db
+    .prepare(`SELECT * FROM sessions WHERE user_id = ? ORDER BY id ASC`)
     .all(userId);
 }
 
-function deleteConversation(id) {
-  const stmt = db.prepare(`DELETE FROM conversations WHERE id = ?`);
+function updateSession(id, new_topic) {
+  const existing = getSessionById(id);
+
+  if (!existing) throw new Error(`session with id ${id} not found`);
+
+  const stmt = db.prepare("UPDATE sessions SET topic = ? WHERE id = ?;");
+
+  const result = stmt.run(new_topic, id);
+  return result.changes > 0;
+}
+
+function deleteSession(id) {
+  const stmt = db.prepare(`DELETE FROM sessions WHERE id = ?`);
   return stmt.run(id).changes > 0;
 }
 
 // ==================== MESSAGES ====================
 
-function insertMessage(userId, conversationId, message, fromUser) {
+function insertMessage(userId, sessionId, message, fromUser) {
   const stmt = db.prepare(`
-    INSERT INTO messages (userId, conversationId, message, from_user, date_created)
+    INSERT INTO messages (user_id, session_id, message, from_user, date_created)
     VALUES (?, ?, ?, ?, ?)
   `);
   const result = stmt.run(
     userId,
-    conversationId,
+    sessionId,
     message,
     fromUser ? 1 : 0,
     new Date().toISOString()
@@ -142,14 +162,20 @@ function insertMessage(userId, conversationId, message, fromUser) {
   return result.lastInsertRowid;
 }
 
+function insertMessageByTopic(userId, topic, message, fromUser) {
+  const sessionId = getSessionByTopic(topic, userId).id;
+
+  return insertMessage(userId, sessionId, message, fromUser);
+}
+
 function getMessageById(id) {
   return db.prepare(`SELECT * FROM messages WHERE id = ?`).get(id);
 }
 
-function getMessagesByConversationId(conversationId) {
+function getMessagesBySessionId(sessionId) {
   return db
-    .prepare(`SELECT * FROM messages WHERE conversation_id = ? ORDER BY id ASC`)
-    .all(conversationId);
+    .prepare(`SELECT * FROM messages WHERE session_id = ? ORDER BY id ASC`)
+    .all(sessionId);
 }
 
 function updateMessage(id, { message, from_user }) {
@@ -225,16 +251,19 @@ module.exports = {
   updateUser,
   deleteUser,
 
-  // Conversations
-  createConversation,
-  getConversationById,
-  getConversationsByUserId,
-  deleteConversation,
+  // Sessions
+  createSession,
+  getSessionById,
+  getSessionByTopic,
+  getSessionsByUserId,
+  updateSession,
+  deleteSession,
 
   // Messages
   insertMessage,
+  insertMessageByTopic,
   getMessageById,
-  getMessagesByConversationId,
+  getMessagesBySessionId,
   updateMessage,
   deleteMessage,
 

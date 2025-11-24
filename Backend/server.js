@@ -147,20 +147,32 @@ function getFactCheckModels(mainModel) {
 }
 
 app.post("/api/startTopic", async (req, res) => {
-  const { topic, model } = req.body;
+  const { topic, model, user_id } = req.body;
   try {
     const result = await startTopic({ topic, mainModel: model });
     res.json(result);
+
+    db.createConversation(user_id, topic);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    let error = err.message;
+
+    if (error.includes("topic")) {
+      error = "Error using the given topic. Please re-enter, or use another."
+    }
+
+    res.status(500).json({ error });
   }
 });
 
 app.post("/api/askQuestion", async (req, res) => {
-  const { topic, question, model } = req.body;
+  const { topic, question, model, user_id } = req.body;
   try {
     const factCheckModels = getFactCheckModels(model);
     const result = await askQuestion({ topic, question, mainModel: model, factCheckModels });
+    
+    db.insertMessageByTopic(user_id, topic, question, true);
+    db.insertMessageByTopic(user_id, topic, result, false);
+    
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -168,9 +180,12 @@ app.post("/api/askQuestion", async (req, res) => {
 });
 
 app.post("/api/hint", async (req, res) => {
-  const { topic, model } = req.body;
+  const { topic, model, user_id } = req.body;
   try {
     const result = await getHint({ topic, mainModel: model });
+    
+    db.insertMessageByTopic(user_id, topic, result, false);
+    
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -277,7 +292,7 @@ app.put("/api/user/:id/preferences", (req, res) => {
       return res.status(201).json({ "message": "Preferences saved", "preferences" : preferences });
     } catch (err) {
       console.error(err);
-      return res.status(500).json({ error: "" });
+      return res.status(500).json({ error: "Encountered a server error, please try again later." });
     }
   }
 
@@ -295,6 +310,36 @@ app.put("/api/user/:id/preferences", (req, res) => {
   } else {
     return res.status(500).json({ error: "Problem with saving preferences, please try again later." });
   }
+});
+
+app.get("/api/sessions/:user_id", (req, res) => {
+  let { user_id } = req.params;
+  user_id = Number(user_id);
+
+  if (Number.isNaN(user_id)) return res.status(400).json({ error: "Invalid user id" });
+
+  if (!db.getUserById(user_id)) return res.status(404).json({ error: "User not found" });
+
+  return res.status(200).json(db.getSessionsByUserId(user_id));
+});
+
+app.get("/api/sessions/:user_id/:session_id", (req, res) => {
+  let { user_id } = req.params;
+  user_id = Number(user_id);
+
+  if (Number.isNaN(user_id)) return res.status(400).json({ error: "Invalid user id" });
+
+  if (!db.getUserById(user_id)) return res.status(404).json({ error: "User not found" });
+
+  let { session_id } = req.params;
+  session_id = Number(session_id);
+  const session = db.getSessionById(session_id);
+
+  if (!session) return res.status(404).json({error: "Could not find the specified session "});
+
+  const messages = db.getMessagesBySessionId(session_id);
+
+  return res.status(200).json({ topic: session.topic, messages });
 });
 
 app.get('/', (req, res) => {
