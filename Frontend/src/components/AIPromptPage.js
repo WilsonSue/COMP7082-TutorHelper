@@ -26,6 +26,9 @@ function AIPrompt() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const [fullOutput, setFullOutput] = useState('');
+  const [revisionOnly, setRevisionOnly] = useState('');
+  const [showRevisionOnly, setShowRevisionOnly] = useState(false);
   const [user, setUser] = useState(null);
 
   useEffect(() => {
@@ -103,7 +106,21 @@ function AIPrompt() {
   // };
 
   const display = (data) => {
-    setOutput(formatOutput(data));
+    const formatted = formatOutput(data);
+
+    setFullOutput(formatted);
+
+    // Extract revised section if it exists
+    const splitIndex = formatted.indexOf("## revised");
+
+    if (splitIndex !== -1) {
+      setRevisionOnly(formatted.slice(splitIndex));
+    } else {
+      setRevisionOnly(formatted); // fallback
+    }
+
+    // Set what is currently displayed
+    setOutput(formatted);
   };
 
   const postData = async (url, data) => {
@@ -299,6 +316,27 @@ function AIPrompt() {
               }}
             >
               Hint
+            </Button>
+            <Button
+              variant="contained"
+              onClick={() => {
+              if (showRevisionOnly) {
+                  setOutput(fullOutput);
+                } else {
+                  setOutput(revisionOnly);
+                }
+                setShowRevisionOnly(!showRevisionOnly);
+              }}
+              disabled={loading}  
+              sx={{
+                bgcolor: '#2c3e50',
+                textTransform: 'none',
+                '&:hover': {
+                  bgcolor: '#1a252f',
+                },
+              }}
+            >
+              {showRevisionOnly ? "Show Full Output" : "Hide Fact Checks"}
             </Button>
           </Box>
 
