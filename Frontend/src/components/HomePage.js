@@ -12,11 +12,21 @@ import {
   AppBar,
   Toolbar,
   IconButton,
+  Grid,
+  Paper,
+  Divider,
+  Chip,
+  CircularProgress,
+  Fab,
+  Tooltip,
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import SchoolIcon from '@mui/icons-material/School';
 import LogoutIcon from '@mui/icons-material/Logout';
 import SettingsIcon from '@mui/icons-material/Settings';
+import ChatIcon from '@mui/icons-material/Chat';
+import AddIcon from '@mui/icons-material/Add';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
 
 // Styled components for custom styling
 const LearningOptionCard = styled(Card)(({ theme, active }) => ({
@@ -51,6 +61,34 @@ const CustomCheckbox = styled(Box)(({ checked }) => ({
   },
 }));
 
+const ConversationCard = styled(Paper)(({ theme }) => ({
+  padding: theme.spacing(2),
+  cursor: 'pointer',
+  transition: 'all 0.3s ease',
+  borderLeft: '4px solid #1a5f7a',
+  '&:hover': {
+    boxShadow: theme.shadows[4],
+    transform: 'translateY(-2px)',
+  },
+}));
+
+const FloatingChatButton = styled(Fab)(({ theme }) => ({
+  position: 'fixed',
+  bottom: theme.spacing(3),
+  right: theme.spacing(3),
+  backgroundColor: '#1a5f7a',
+  color: 'white',
+  width: 64,
+  height: 64,
+  '&:hover': {
+    backgroundColor: '#134557',
+    transform: 'scale(1.1)',
+  },
+  transition: 'all 0.3s ease',
+  boxShadow: '0 4px 12px rgba(26, 95, 122, 0.4)',
+  zIndex: 1000,
+}));
+
 function Home() {
   const [user, setUser] = useState(null);
   const [isFirstTimeUser, setIsFirstTimeUser] = useState(false);
@@ -59,6 +97,8 @@ function Home() {
     adhd: true,
     'due-dates': true,
   });
+  const [sessions, setSessions] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [alert, setAlert] = useState({
     open: false,
     message: '',
@@ -77,7 +117,9 @@ function Home() {
       // Load preferences and onboarding from backend
       (async () => {
         try {
-          const res = await fetch(`${API_BASE}/api/user/${userObj.id}/preferences`);
+          const res = await fetch(
+            `${API_BASE}/api/user/${userObj.id}/preferences`
+          );
           if (res.ok) {
             const data = await res.json();
             const prefs = {
@@ -94,10 +136,31 @@ function Home() {
           setIsFirstTimeUser(true);
         }
       })();
+
+      // Fetch user's sessions/conversations
+      fetchSessions(userObj.id);
     } else {
       navigate('/login');
     }
-  }, [navigate]);
+  }, [navigate, API_BASE]);
+
+  const fetchSessions = async (userId) => {
+    try {
+      setLoading(true);
+      const response = await fetch(`${API_BASE}/api/sessions/${userId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setSessions(data);
+      } else {
+        console.error('Failed to fetch sessions');
+      }
+    } catch (error) {
+      console.error('Error fetching sessions:', error);
+      showAlert('Failed to load conversation history', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const showAlert = (message, severity) => {
     setAlert({ open: true, message, severity });
@@ -138,7 +201,9 @@ function Home() {
         })
         .then(() => {
           showAlert(
-            `Learning preferences confirmed! Selected: ${activeOptions.join(', ')}`,
+            `Learning preferences confirmed! Selected: ${activeOptions.join(
+              ', '
+            )}`,
             'success'
           );
           setIsFirstTimeUser(false);
@@ -155,6 +220,46 @@ function Home() {
     localStorage.removeItem('user');
     localStorage.removeItem('token');
     navigate('/login');
+  };
+
+  const handleViewConversation = async (sessionId) => {
+    try {
+      const response = await fetch(
+        `${API_BASE}/api/sessions/${user.id}/${sessionId}`
+      );
+      if (response.ok) {
+        const data = await response.json();
+        // Navigate to AI prompt page with the conversation data
+        navigate('/ai-prompt', {
+          state: {
+            topic: data.topic,
+            messages: data.messages,
+            sessionId: sessionId,
+          },
+        });
+      } else {
+        showAlert('Failed to load conversation', 'error');
+      }
+    } catch (error) {
+      console.error('Error loading conversation:', error);
+      showAlert('Failed to load conversation', 'error');
+    }
+  };
+
+  const handleNewConversation = () => {
+    navigate('/ai-prompt');
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'Unknown date';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   };
 
   if (!user) {
@@ -359,17 +464,189 @@ function Home() {
       </AppBar>
 
       {/* Main Dashboard Content */}
-      <Container maxWidth="lg" sx={{ py: 4 }}>
-        <Typography variant="h4" sx={{ mb: 3, fontWeight: 600 }}>
-          Your Dashboard
-        </Typography>
+      <Container maxWidth="lg" sx={{ py: 4, pb: 10 }}>
+        {/* Header Section */}
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            mb: 4,
+          }}
+        >
+          <Typography variant="h4" sx={{ fontWeight: 600 }}>
+            Your Dashboard
+          </Typography>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={handleNewConversation}
+            sx={{
+              bgcolor: '#1a5f7a',
+              color: 'white',
+              textTransform: 'none',
+              px: 3,
+              py: 1,
+              '&:hover': {
+                bgcolor: '#134557',
+              },
+            }}
+          >
+            New Conversation
+          </Button>
+        </Box>
 
-        <Typography variant="body1" sx={{ color: '#666' }}>
-          Welcome to your learning dashboard! Your main content goes here.
-        </Typography>
+        {/* Conversations Section */}
+        <Box sx={{ mb: 4 }}>
+          <Typography
+            variant="h5"
+            sx={{
+              mb: 2,
+              fontWeight: 500,
+              display: 'flex',
+              alignItems: 'center',
+            }}
+          >
+            <ChatIcon sx={{ mr: 1, color: '#1a5f7a' }} />
+            Recent Conversations
+          </Typography>
+          <Divider sx={{ mb: 3 }} />
 
-        {/* Add your dashboard content here */}
+          {loading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+              <CircularProgress />
+            </Box>
+          ) : sessions.length === 0 ? (
+            <Paper sx={{ p: 4, textAlign: 'center', bgcolor: '#fafafa' }}>
+              <ChatIcon sx={{ fontSize: 48, color: '#bbb', mb: 2 }} />
+              <Typography variant="h6" sx={{ color: '#666', mb: 1 }}>
+                No conversations yet
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#999', mb: 3 }}>
+                Start your first conversation with the AI tutor
+              </Typography>
+              <Button
+                variant="contained"
+                onClick={handleNewConversation}
+                sx={{
+                  bgcolor: '#1a5f7a',
+                  color: 'white',
+                  textTransform: 'none',
+                  '&:hover': {
+                    bgcolor: '#134557',
+                  },
+                }}
+              >
+                Start Learning
+              </Button>
+            </Paper>
+          ) : (
+            <Grid container spacing={2}>
+              {sessions.map((session) => (
+                <Grid item xs={12} md={6} key={session.id}>
+                  <ConversationCard
+                    elevation={2}
+                    onClick={() => handleViewConversation(session.id)}
+                  >
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'flex-start',
+                        mb: 1,
+                      }}
+                    >
+                      <Typography
+                        variant="h6"
+                        sx={{ fontWeight: 600, color: '#333', flex: 1 }}
+                      >
+                        {session.topic}
+                      </Typography>
+                      <Chip
+                        label="Active"
+                        size="small"
+                        sx={{
+                          bgcolor: '#e8f5e9',
+                          color: '#2e7d32',
+                          fontWeight: 500,
+                        }}
+                      />
+                    </Box>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        color: '#666',
+                      }}
+                    >
+                      <AccessTimeIcon sx={{ fontSize: 16, mr: 0.5 }} />
+                      <Typography variant="caption">
+                        {formatDate(session.date_created)}
+                      </Typography>
+                    </Box>
+                  </ConversationCard>
+                </Grid>
+              ))}
+            </Grid>
+          )}
+        </Box>
+
+        {/* Stats Section (Optional) */}
+        <Box sx={{ mt: 4 }}>
+          <Grid container spacing={3}>
+            <Grid item xs={12} sm={4}>
+              <Paper sx={{ p: 3, textAlign: 'center' }}>
+                <Typography
+                  variant="h3"
+                  sx={{ color: '#1a5f7a', fontWeight: 600 }}
+                >
+                  {sessions.length}
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#666' }}>
+                  Total Conversations
+                </Typography>
+              </Paper>
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <Paper sx={{ p: 3, textAlign: 'center' }}>
+                <Typography
+                  variant="h3"
+                  sx={{ color: '#1a5f7a', fontWeight: 600 }}
+                >
+                  {sessions.length > 0 ? sessions.length * 5 : 0}
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#666' }}>
+                  Questions Asked
+                </Typography>
+              </Paper>
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <Paper sx={{ p: 3, textAlign: 'center' }}>
+                <Typography
+                  variant="h3"
+                  sx={{ color: '#1a5f7a', fontWeight: 600 }}
+                >
+                  {sessions.length > 0 ? Math.floor(sessions.length * 2.5) : 0}h
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#666' }}>
+                  Learning Time
+                </Typography>
+              </Paper>
+            </Grid>
+          </Grid>
+        </Box>
       </Container>
+
+      {/* Floating Chat Button */}
+      <Tooltip title="Start a conversation" placement="left" arrow>
+        <FloatingChatButton
+          color="primary"
+          aria-label="chat"
+          onClick={handleNewConversation}
+        >
+          <ChatIcon sx={{ fontSize: 28 }} />
+        </FloatingChatButton>
+      </Tooltip>
 
       {/* Alert Snackbar */}
       <Snackbar
