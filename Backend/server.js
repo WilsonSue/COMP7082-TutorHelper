@@ -9,6 +9,8 @@ const { startTopic, askQuestion, getHint } = require("./query");
 const db = require("./database");
 require("dotenv").config();
 
+const port = process.env.PORT || 3000;
+
 const app = express();
 app.use(express.json()); // parse JSON bodies
 
@@ -172,8 +174,8 @@ app.post("/api/askQuestion", async (req, res) => {
     const factCheckModels = getFactCheckModels(model);
     const result = await askQuestion({ topic, question, mainModel: model, factCheckModels });
     
-    db.insertMessageByTopic(user_id, topic, question, true);
-    db.insertMessageByTopic(user_id, topic, result, false);
+    // db.insertMessageByTopic(user_id, topic, question, true);
+    // db.insertMessageByTopic(user_id, topic, result, false);
     
     res.json(result);
   } catch (err) {
@@ -491,6 +493,6 @@ app.use((req, res) => {
   res.sendFile(path.join(frontendPath, "index.html"));
 });
 
-app.listen(process.env.PORT, () => {
-  console.log(`Backend running on http://localhost:${process.env.PORT}`);
+app.listen(port, () => {
+  console.log(`Backend running on http://localhost:${port}`);
 });
