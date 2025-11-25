@@ -62,7 +62,7 @@ function SettingsPage() {
     severity: 'success',
   });
   const navigate = useNavigate();
-  const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
+  const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:3000';
 
   useEffect(() => {
     const userData = localStorage.getItem('user');

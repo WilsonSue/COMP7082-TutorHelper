@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import {
   Box,
@@ -29,6 +29,18 @@ function AIPrompt() {
   const [fullOutput, setFullOutput] = useState('');
   const [revisionOnly, setRevisionOnly] = useState('');
   const [showRevisionOnly, setShowRevisionOnly] = useState(false);
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+      const userData = localStorage.getItem('user');
+  
+      if (userData) {
+        const userObj = JSON.parse(userData);
+        setUser(userObj);
+      } else {
+        navigate('/login');
+      }
+    }, [navigate]);
 
   // =====================
   // OUTPUT FORMATTING
@@ -132,7 +144,7 @@ function AIPrompt() {
     setError('');
 
     try {
-      const data = await postData("/api/startTopic", { topic, model });
+      const data = await postData("/api/startTopic", { topic, model, user_id: user.id });
       display(data);
     } catch (err) {
       display({ error: err.message });
@@ -152,7 +164,7 @@ function AIPrompt() {
     setError('');
 
     try {
-      const data = await postData("/api/askQuestion", { topic, question, model });
+      const data = await postData("/api/askQuestion", { topic, question, model, user_id: user.id });
       display(data);
     } catch (err) {
       display({ error: err.message });
@@ -172,7 +184,7 @@ function AIPrompt() {
     setError('');
 
     try {
-      const data = await postData("/api/hint", { topic, model });
+      const data = await postData("/api/hint", { topic, model, user_id: user.id });
       display(data);
     } catch (err) {
       display({ error: err.message });
