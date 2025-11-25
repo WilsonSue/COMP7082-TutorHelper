@@ -150,52 +150,89 @@ function getFactCheckModels(mainModel) {
   return [left, right];
 }
 
-app.post("/api/startTopic", async (req, res) => {
+app.post('/api/startTopic', async (req, res) => {
   const { topic, model, user_id } = req.body;
   try {
     const result = await startTopic({ topic, mainModel: model });
-    res.json(result);
 
-    db.createConversation(user_id, topic);
+    // Create session BEFORE sending response
+    const sessionId = db.createSession(user_id, topic);
+
+    res.json(result);
   } catch (err) {
     let error = err.message;
 
-    if (error.includes("topic")) {
-      error = "Error using the given topic. Please re-enter, or use another."
+    if (error.includes('topic')) {
+      error = 'Error using the given topic. Please re-enter, or use another.';
     }
 
     res.status(500).json({ error });
   }
 });
 
-app.post("/api/askQuestion", async (req, res) => {
+app.post('/api/askQuestion', async (req, res) => {
   const { topic, question, model, user_id } = req.body;
   try {
     const factCheckModels = getFactCheckModels(model);
-    const result = await askQuestion({ topic, question, mainModel: model, factCheckModels });
-    
-    // db.insertMessageByTopic(user_id, topic, question, true);
-    // db.insertMessageByTopic(user_id, topic, result, false);
-    
+    const result = await askQuestion({
+      topic,
+      question,
+      mainModel: model,
+      factCheckModels,
+    });
+
+    // Check if session exists, create if not
+    let session = db.getSessionByTopic(topic, user_id);
+    if (!session) {
+      const sessionId = db.createSession(user_id, topic);
+      session = db.getSessionById(sessionId);
+    }
+
+    // The result has: { model, initial, factChecks, revised }
+    // Use 'revised' for the final answer
+    const answerText =
+      result.revised || result.initial || JSON.stringify(result);
+
+    // Now insert messages
+    db.insertMessage(user_id, session.id, question, true);
+    db.insertMessage(user_id, session.id, answerText, false);
+
     res.json(result);
   } catch (err) {
+    console.error('Error in /api/askQuestion:', err);
     res.status(500).json({ error: err.message });
   }
 });
 
-app.post("/api/hint", async (req, res) => {
+app.post('/api/hint', async (req, res) => {
   const { topic, model, user_id } = req.body;
   try {
     const result = await getHint({ topic, mainModel: model });
-    
-    db.insertMessageByTopic(user_id, topic, result, false);
-    
+
+    // Check if session exists, create if not
+    let session = db.getSessionByTopic(topic, user_id);
+    if (!session) {
+      const sessionId = db.createSession(user_id, topic);
+      session = db.getSessionById(sessionId);
+    }
+
+    // Extract hint text - adjust based on what getHint returns
+    // If it has similar structure, use result.revised or result.hint
+    const hintText =
+      result.hint ||
+      result.revised ||
+      result.initial ||
+      (typeof result === 'string' ? result : JSON.stringify(result));
+
+    // Insert hint message
+    db.insertMessage(user_id, session.id, hintText, false);
+
     res.json(result);
   } catch (err) {
+    console.error('Error in /api/hint:', err);
     res.status(500).json({ error: err.message });
   }
 });
-
 // app.post("/api/fullcycle", async (req, res) => {
 //   try {
 //     const { topic, level, style } = req.body;
