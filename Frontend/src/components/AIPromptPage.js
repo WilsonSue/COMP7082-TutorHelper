@@ -91,7 +91,7 @@ function AIPrompt() {
   // };
 
   const display = (data) => {
-    setOutput(typeof data === "string" ? data : JSON.stringify(data, null, 2));
+    setOutput(formatOutput(data));
   };
 
   const postData = async (url, data) => {
