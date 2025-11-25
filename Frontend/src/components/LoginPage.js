@@ -12,7 +12,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import Header from './Header';
 
-const API_BASE = 'http://localhost:3001/api';
+const API_BASE = 'http://localhost:3000/api';
 
 function LoginPage() {
   const [email, setEmail] = useState('');

@@ -491,6 +491,6 @@ app.use((req, res) => {
   res.sendFile(path.join(frontendPath, "index.html"));
 });
 
-app.listen(3001, () => {
-  console.log("Backend running on http://localhost:3001");
+app.listen(process.env.PORT, () => {
+  console.log(`Backend running on http://localhost:${process.env.PORT}`);
 });
