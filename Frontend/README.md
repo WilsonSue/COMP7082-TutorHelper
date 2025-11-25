@@ -68,3 +68,29 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/d
 ### `npm run build` fails to minify
 
 This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+
+## Local development - backend / frontend port setup
+
+When running the frontend and backend locally you can avoid API/SPA collisions by running the backend on a different port than the frontend dev server (CRA uses port 3000 by default).
+
+Recommended setup:
+
+- Backend: run on port 3001
+- Frontend: runs on port 3000
+
+Set your frontend to call the API using the `REACT_APP_API_BASE` environment variable.
+Create `.env` in `Frontend/` (or copy `.env.example`) and set:
+
+```
+REACT_APP_API_BASE=http://localhost:3001
+```
+
+If you prefer to keep the frontend on the same origin in development, you can configure a proxy in `Frontend/package.json`:
+
+```
+	"proxy": "http://localhost:3001"
+```
+
+Then in the frontend code use relative paths like `fetch('/api/register')` and the CRA dev server will proxy the request to the backend.
+
+If a frontend POST to `/api/...` returns `index.html` or you see "Unexpected token '<'" it means the request is hitting your static/frontend server and not the backend API. Double-check your `REACT_APP_API_BASE` and running processes (e.g. `serve -s build` or the CRA dev server). If a process is binding port 3000 and you want the backend there, stop that process first.

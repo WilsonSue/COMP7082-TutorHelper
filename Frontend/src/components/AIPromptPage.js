@@ -19,6 +19,8 @@ import SchoolIcon from '@mui/icons-material/School';
 import { useNavigate } from 'react-router-dom';
 
 function AIPrompt() {
+  // Allow overriding backend host during development (same pattern used elsewhere)
+    const FRONTEND_API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:3001';
   const [topic, setTopic] = useState('');
   const [model, setModel] = useState('gpt');
   const [question, setQuestion] = useState('');
@@ -107,13 +109,34 @@ function AIPrompt() {
   };
 
   const postData = async (url, data) => {
-    const res = await fetch(url, {
+    const target = `${FRONTEND_API_BASE}${url}`; // url is expected to start with /api
+    const res = await fetch(target, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data)
     });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return await res.json();
+    // accept both JSON and non-JSON responses without throwing on parse
+    const contentType = res.headers.get('content-type') || '';
+    let body;
+    if (contentType.includes('application/json')) {
+      body = await res.json();
+    } else {
+      // server returned non-JSON (likely HTML index) — capture for debugging
+      const text = await res.text();
+      body = { error: `Server returned non-JSON response (status ${res.status})`, raw: text.slice(0, 1000) };
+    }
+
+    if (!res.ok) {
+      // If server returned HTML (usually the SPA index) make the error actionable
+      let message = body?.error || `HTTP ${res.status}`;
+      if (contentType.includes('text/html') || (body && body.raw && body.raw.startsWith('<!doctype'))) {
+        message = `Server returned HTML instead of JSON (status ${res.status}). This typically means your request hit the static frontend server (index.html) rather than the backend API.\n+Check that your backend is running and that REACT_APP_API_BASE (or API_BASE) points at the backend (e.g. http://localhost:3001), or configure CRA's proxy. Raw server response omitted.`;
+      }
+
+      throw new Error(message);
+    }
+
+    return body;
   };
 
   // start topic

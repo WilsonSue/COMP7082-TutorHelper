@@ -12,6 +12,12 @@ require("dotenv").config();
 const app = express();
 app.use(express.json()); // parse JSON bodies
 
+// quick request logger to help debugging route matching
+app.use((req, res, next) => {
+  console.log(`[REQ] ${new Date().toISOString()} ${req.method} ${req.path}`);
+  next();
+});
+
 app.use(cors());
 // app.use(express.static(path.join(__dirname, 'public')));
 const frontendPath = path.join(__dirname, '../Frontend/build');
@@ -154,7 +160,13 @@ app.post("/api/startTopic", async (req, res) => {
     const result = await startTopic({ topic, mainModel: model });
     res.json(result);
 
-    db.createConversation(user_id, topic);
+    // createSession is the database helper that inserts a session row
+    // `createConversation` didn't exist which would throw at runtime
+    try {
+      db.createSession(user_id, topic);
+    } catch (err) {
+      console.error('Failed to create session in DB:', err);
+    }
   } catch (err) {
     let error = err.message;
 
@@ -491,6 +503,36 @@ app.use((req, res) => {
   res.sendFile(path.join(frontendPath, "index.html"));
 });
 
-app.listen(process.env.PORT, () => {
-  console.log(`Backend running on http://localhost:${process.env.PORT}`);
+// Listen on PORT (default to 3000) and avoid unexpected process exit on errors
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+  console.log(`Backend running on http://localhost:${PORT}`);
 });
+
+// Keep the process alive and log errors instead of force-stopping the console
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  // do not call process.exit here so the server stays up for debugging
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception thrown:', err);
+  // do not call process.exit here so the server stays up for debugging
+});
+
+// Heartbeat so you can see the server is still alive in terminals/logs
+const HEARTBEAT_INTERVAL = 30_000; // 30s
+const heartbeat = setInterval(() => {
+  console.log(`[heartbeat] Server still running on http://localhost:${PORT} - ${new Date().toISOString()}`);
+}, HEARTBEAT_INTERVAL);
+
+// Graceful shutdown logging (this will not forcibly exit unless OS asks us to)
+function gracefulShutdown(signal) {
+  console.log(`Received ${signal}. Performing graceful shutdown...`);
+  clearInterval(heartbeat);
+  // close server if needed in future
+}
+
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));

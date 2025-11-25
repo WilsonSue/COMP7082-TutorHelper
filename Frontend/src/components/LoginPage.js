@@ -12,7 +12,8 @@ import {
 import { useNavigate } from 'react-router-dom';
 import Header from './Header';
 
-const API_BASE = 'http://localhost:3000/api';
+// prefer env var like other components and build requests against /api
+const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:3001';
 
 function LoginPage() {
   const [email, setEmail] = useState('');
@@ -38,7 +39,7 @@ function LoginPage() {
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_BASE}/login`, {
+      const response = await fetch(`${API_BASE}/api/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -49,7 +50,14 @@ function LoginPage() {
         }),
       });
 
-      const data = await response.json();
+      let data;
+      const contentType = response.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        data = { error: `Server returned non-JSON response (status ${response.status})`, raw: text.slice(0, 500) };
+      }
 
       if (response.ok) {
         localStorage.setItem('user', JSON.stringify(data.user));
@@ -59,10 +67,7 @@ function LoginPage() {
           navigate('/home');
         }, 1500);
       } else {
-        showAlert(
-          data.error || 'Login failed. Please check your credentials.',
-          'error'
-        );
+        showAlert(data.error || data.message || 'Login failed. Please check your credentials.', 'error');
       }
     } catch (error) {
       console.error('Login error:', error);

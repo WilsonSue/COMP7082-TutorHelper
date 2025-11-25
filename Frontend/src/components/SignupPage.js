@@ -12,7 +12,8 @@ import {
 import { useNavigate } from 'react-router-dom';
 import Header from './Header';
 
-const API_BASE = 'http://localhost:3000/api';
+// follow other components: prefer REACT_APP_API_BASE and append /api when building requests
+const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:3001';
 
 function SignupPage() {
   const [username, setUsername] = useState('');
@@ -74,7 +75,7 @@ function SignupPage() {
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_BASE}/register`, {
+      const response = await fetch(`${API_BASE}/api/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -86,7 +87,16 @@ function SignupPage() {
         }),
       });
 
-      const data = await response.json();
+      // Try parsing JSON, but fall back to raw text when server responds with HTML or not-JSON
+      let data;
+      const contentType = response.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        // non-json response (e.g. HTML index) — capture the text and present a helpful error
+        const text = await response.text();
+        data = { error: `Server returned non-JSON response (status ${response.status})`, raw: text.slice(0, 500) };
+      }
 
       if (response.ok) {
         showAlert(
@@ -97,7 +107,8 @@ function SignupPage() {
           navigate('/login');
         }, 2000);
       } else {
-        showAlert(data.error || 'Signup failed. Please try again.', 'error');
+        // data may be object with an error property, or contain raw text from server
+        showAlert(data.error || data.message || 'Signup failed. Please try again.', 'error');
       }
     } catch (error) {
       console.error('Signup error:', error);
