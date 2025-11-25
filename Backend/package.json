@@ -14,7 +14,9 @@
   "dependencies": {
     "@google/genai": "^1.28.0",
     "@huggingface/inference": "^4.13.0",
+    "argon2": "^0.44.0",
     "axios": "^1.13.1",
+    "better-sqlite3": "^12.4.6",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
