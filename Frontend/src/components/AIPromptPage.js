@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
 import {
   Box,
   Container,
@@ -44,60 +45,62 @@ function AIPrompt() {
 
   // Nicely format output objects from the backend
   const formatOutput = (data) => {
-    // If response contains AI results (object), build readable sections
-    if (typeof data === "object" && data !== null) {
-      let formatted = "";
-
-      for (const key in data) {
-        const value = data[key];
-        const title = key.replace(/([A-Z])/g, " $1").toUpperCase();
-
-        formatted += `=== ${title.trim()} ===\n`;
-
-        if (typeof value === "string") {
-          formatted += wrapText(value) + "\n\n";
-        } else if (Array.isArray(value)) {
-          formatted += value
-            .map((v, i) => {
-              if (typeof v === "object") {
-                return `#${i + 1}: ${v.model ? `[${v.model}] ` : ""}${wrapText(JSON.stringify(v.check || v, null, 2))}`;
-              } else {
-                return `#${i + 1}: ${wrapText(String(v))}`;
-              }
-            })
-            .join("\n\n");
-          formatted += "\n\n";
-        } else if (typeof value === "object" && value !== null) {
-          formatted += JSON.stringify(value, null, 2) + "\n\n";
-        } else {
-          formatted += String(value) + "\n\n";
-        }
-      }
-
-      return formatted.trim();
+    if (typeof data !== "object" || data === null) {
+      return String(data); // let markdown render naturally
     }
 
-    // Otherwise just return wrapped text
-    return wrapText(String(data));
+    let formatted = "";
+
+    for (const key in data) {
+      const value = data[key];
+      const title = key.replace(/([A-Z])/g, " $1").trim();
+
+      formatted += `## ${title}\n\n`;
+
+      if (typeof value === "string") {
+        formatted += `${value}\n\n`;
+      } 
+      else if (Array.isArray(value)) {
+        value.forEach((item, idx) => {
+          formatted += `### Item ${idx + 1}\n\n`;
+
+          if (typeof item === "object") {
+            formatted += "```json\n";
+            formatted += JSON.stringify(item, null, 2);
+            formatted += "\n```\n\n";
+          } else {
+            formatted += `${item}\n\n`;
+          }
+        });
+      }
+      else if (typeof value === "object") {
+        formatted += "```json\n";
+        formatted += JSON.stringify(value, null, 2);
+        formatted += "\n```\n\n";
+      }
+    }
+
+    return formatted.trim();
   };
 
   // Helper to wrap text to readable width
-  const wrapText = (text, width = 80) => {
-    const words = text.split(/\s+/);
-    let lines = [];
-    let current = "";
+  const wrapText = (text) => text;  // do nothing, keep markdown intact
+  // const wrapText = (text, width = 80) => {
+  //   const words = text.split(/\s+/);
+  //   let lines = [];
+  //   let current = "";
 
-    for (const word of words) {
-      if ((current + word).length > width) {
-        lines.push(current.trim());
-        current = "";
-      }
-      current += word + " ";
-    }
-    if (current) lines.push(current.trim());
+  //   for (const word of words) {
+  //     if ((current + word).length > width) {
+  //       lines.push(current.trim());
+  //       current = "";
+  //     }
+  //     current += word + " ";
+  //   }
+  //   if (current) lines.push(current.trim());
 
-    return lines.join("\n");
-  };
+  //   return lines.join("\n");
+  // };
 
   const display = (data) => {
     setOutput(formatOutput(data));
@@ -303,6 +306,7 @@ function AIPrompt() {
           <Typography variant="h5" sx={{ mb: 2, fontWeight: 600 }}>
             Output:
           </Typography>
+
           <Paper
             variant="outlined"
             sx={{
@@ -311,13 +315,14 @@ function AIPrompt() {
               minHeight: '200px',
               maxHeight: '400px',
               overflow: 'auto',
-              fontFamily: 'monospace',
               fontSize: '14px',
-              whiteSpace: 'pre-wrap',
-              wordWrap: 'break-word'
-            }}
+              }}
           >
-            {output || 'Output will appear here...'}
+            {output ? (
+              <ReactMarkdown>{output}</ReactMarkdown>
+            ) : (
+              <ReactMarkdown>{'Output will appear here...'}</ReactMarkdown>
+            )}
           </Paper>
         </Paper>
       </Container>
