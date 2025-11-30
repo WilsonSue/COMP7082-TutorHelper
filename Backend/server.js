@@ -50,27 +50,6 @@ app.post("/api/ask/deepseek", async (req, res) => {
 });
 
 // ==========================
-// Route 2: LLaMA
-// ==========================
-// app.post("/api/ask/llama", async (req, res) => {
-//   try {
-//     const { prompt } = req.body;
-//     if (!prompt) return res.status(400).json({ error: "Missing 'prompt'" });
-
-//     const output = await client.textGeneration({
-//       provider: "featherless-ai",
-//       model: "meta-llama/Llama-3.1-8B",
-//       inputs: prompt,
-//     });
-
-//     res.json({ model: "LLaMA", output });
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).json({ error: "Something went wrong." });
-//   }
-// });
-
-// ==========================
 // Route 2: GPT-OSS (replacing LLaMA)
 // ==========================
 app.post("/api/ask/gpt", async (req, res) => {
@@ -233,16 +212,6 @@ app.post('/api/hint', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-// app.post("/api/fullcycle", async (req, res) => {
-//   try {
-//     const { topic, level, style } = req.body;
-//     const results = await runFullCycle({ topic, level, style });
-//     res.json(results);
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).json({ error: err.message });
-//   }
-// });
 
 app.post("/api/register", async (req, res) => {
   const { username, email, password } = req.body;
@@ -521,10 +490,6 @@ app.get("/api/sessions/:user_id/:session_id", (req, res) => {
 
   return res.status(200).json({ topic: session.topic, messages });
 });
-
-// app.get('/', (req, res) => {
-//   res.sendFile(path.join(__dirname, 'public', 'index.html'));
-// });
 
 app.use((req, res) => {
   res.sendFile(path.join(frontendPath, "index.html"));

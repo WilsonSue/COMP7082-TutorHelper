@@ -88,22 +88,6 @@ function AIPrompt() {
 
   // Helper to wrap text to readable width
   const wrapText = (text) => text;  // do nothing, keep markdown intact
-  // const wrapText = (text, width = 80) => {
-  //   const words = text.split(/\s+/);
-  //   let lines = [];
-  //   let current = "";
-
-  //   for (const word of words) {
-  //     if ((current + word).length > width) {
-  //       lines.push(current.trim());
-  //       current = "";
-  //     }
-  //     current += word + " ";
-  //   }
-  //   if (current) lines.push(current.trim());
-
-  //   return lines.join("\n");
-  // };
 
   const display = (data) => {
     const formatted = formatOutput(data);
