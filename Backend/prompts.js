@@ -1,5 +1,13 @@
 // prompts.js
 
+/**
+ * Builds the initial tutor prompt for a topic.
+ * @param {Object} params
+ * @param {string} params.topic - Topic to explain.
+ * @param {string} [params.level='Undergraduate'] - Education level.
+ * @param {string} [params.style='gentle'] - Teaching style/tone.
+ * @returns {string} Prompt for AI to generate topic explanation.
+ */
 function buildStartingPrompt({ topic, level = "Undergraduate", style = "gentle" }) {
   return `
 You are an intelligent AI tutor. Your goal is to provide accurate, clear, and complete guidance on any topic. 
@@ -36,6 +44,14 @@ Output Guidelines:
 `;
 }
 
+/**
+ * Builds a prompt for fact-checking an AI's output.
+ * @param {Object} params
+ * @param {string} params.topic - Topic being evaluated.
+ * @param {string} params.original_ai_output - Original output text from the AI.
+ * @param {string} [params.detail_level='moderate'] - Level of detail for fact-checking.
+ * @returns {string} Prompt for AI fact-checking.
+ */
 function buildFactCheckerPrompt({ topic, original_ai_output, detail_level = "moderate" }) {
   return `
 You are an AI fact checker. Your task is to evaluate the accuracy, completeness, and reliability
@@ -59,6 +75,15 @@ Output Format:
 `;
 }
 
+/**
+ * Builds a prompt to revise an AI answer using feedback.
+ * @param {Object} params
+ * @param {string} params.original_ai_output - Original output text.
+ * @param {string} params.feedback - Feedback from fact-checking models.
+ * @param {string} params.topic - Topic context.
+ * @param {string} params.revision_level - How extensively to revise (e.g., minor, moderate, major).
+ * @returns {string} Prompt instructing AI to revise its original output.
+ */
 function buildRevisionPrompt({ original_ai_output, feedback, topic, revision_level }) {
   return `
 You are the original AI that generated an answer. You have received feedback from a fact-checking AI.
@@ -79,6 +104,14 @@ Output: A revised answer to the original prompt.
 `;
 }
 
+/**
+ * Builds a Socratic-style prompt to guide a user with open-ended questions.
+ * @param {Object} params
+ * @param {string} params.topic - Topic to guide the user on.
+ * @param {string} params.level - User education level.
+ * @param {string} params.style - Tone/style of Socratic questioning.
+ * @returns {string} Prompt for AI to provide Socratic hints/questions.
+ */
 function buildSocraticPrompt({ topic, level, style }) {
   return `
 You are an AI tutor using the Socratic method. Your goal is to help the user think critically and arrive at their own conclusions.
