@@ -3,6 +3,18 @@ const router = express.Router();
 const db = require("../database");
 require("dotenv").config();
 
+/**
+ * @route POST /register
+ * @group Users - User account management
+ * @summary Register a new user account
+ * @param {string} username.body.required - Desired username
+ * @param {string} email.body.required - User email address
+ * @param {string} password.body.required - User password
+ * @returns {object} 201 - Successfully created account
+ * @returns {string} message - Confirmation message
+ * @returns {object} 400 - Missing or invalid fields
+ * @returns {object} 500 - Server error
+ */
 router.post("/register", async (req, res) => {
   const { username, email, password } = req.body;
 
@@ -26,6 +38,18 @@ router.post("/register", async (req, res) => {
   }
 });
 
+/**
+ * @route POST /login
+ * @group Users - User authentication
+ * @summary Log a user into their account
+ * @param {string} login.body.required - Username or email used to log in
+ * @param {string} password.body.required - User password
+ * @returns {object} 200 - Logged in successfully
+ * @returns {object} user - User information (password removed)
+ * @returns {string} message - Login confirmation
+ * @returns {object} 400 - Invalid credentials
+ * @returns {object} 401 - Unauthorized / login failure
+ */
 router.post("/login", async (req, res) => {
   const { login, password } = req.body;
   
@@ -44,6 +68,15 @@ router.post("/login", async (req, res) => {
   }
 });
 
+/**
+ * @route GET /user/{id}/preferences
+ * @group Users - User preferences
+ * @summary Retrieve a user's preference settings
+ * @param {number} id.path.required - User ID
+ * @returns {object} 200 - User preferences object
+ * @returns {object} 400 - Invalid user ID
+ * @returns {object} 404 - User not found
+ */
 router.get("/user/:id/preferences", async (req, res) => {
   let { id } = req.params;
   id = Number(id);
@@ -67,6 +100,21 @@ router.get("/user/:id/preferences", async (req, res) => {
   res.status(200).json(preferences);
 });
 
+/**
+ * @route PUT /user/{id}/preferences
+ * @group Users - User preferences
+ * @summary Update a user's preference settings
+ * @param {number} id.path.required - User ID
+ * @param {boolean} visual.body.optional - Visual learning preference
+ * @param {boolean} adhd.body.optional - ADHD support preference
+ * @param {boolean} due_dates.body.optional - Due date reminders enabled
+ * @param {boolean} onboarding_complete.body.optional - Onboarding completion status
+ * @returns {object} 202 - Preferences updated successfully
+ * @returns {object} 201 - Preferences created (if none existed)
+ * @returns {object} 400 - Invalid user ID
+ * @returns {object} 404 - User not found
+ * @returns {object} 500 - Server error saving preferences
+ */
 router.put("/user/:id/preferences", (req, res) => {
   let { id } = req.params;
   id = Number(id);
