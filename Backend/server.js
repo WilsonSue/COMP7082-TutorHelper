@@ -4,6 +4,8 @@ const path = require('path');
 const { InferenceClient } = require("@huggingface/inference");
 const { GoogleGenAI } = require("@google/genai");
 const { OpenAI } = require("openai");
+// ordered model list
+const MODEL_ORDER = ["deepseek", "mistral", "gpt", "gemini"];
 const cors = require("cors");
 const { startTopic, askQuestion, getHint } = require("./query");
 const db = require("./database");
@@ -28,8 +30,22 @@ const gptClient = new OpenAI({
 });
 
 // ==========================
+// AI Model Routes
+// ==========================
+
+// ==========================
 // Route 1: DeepSeek
 // ==========================
+/**
+ * @route POST /api/ask/deepseek
+ * @summary Ask the DeepSeek AI model a prompt
+ * @param {string} prompt.body.required - The prompt text to send
+ * @returns {object} 200 - The AI response
+ * @returns {string} model - Model name
+ * @returns {string} output - Generated text from AI
+ * @returns {object} 400 - Missing prompt error
+ * @returns {object} 500 - Internal server error
+ */
 app.post("/api/ask/deepseek", async (req, res) => {
   try {
     const { prompt } = req.body;
@@ -50,8 +66,18 @@ app.post("/api/ask/deepseek", async (req, res) => {
 });
 
 // ==========================
-// Route 2: GPT-OSS (replacing LLaMA)
+// Route 2: GPT-OSS
 // ==========================
+/**
+ * @route POST /api/ask/gpt
+ * @summary Ask the GPT-OSS AI model a prompt
+ * @param {string} prompt.body.required - The prompt text to send
+ * @returns {object} 200 - The AI response
+ * @returns {string} model - Model name
+ * @returns {string} output - Generated text from AI
+ * @returns {object} 400 - Missing prompt error
+ * @returns {object} 500 - Internal server error
+ */
 app.post("/api/ask/gpt", async (req, res) => {
   try {
     const { prompt } = req.body;
@@ -73,6 +99,16 @@ app.post("/api/ask/gpt", async (req, res) => {
 // ==========================
 // Route 3: Gemini
 // ==========================
+/**
+ * @route POST /api/ask/gemini
+ * @summary Ask the Gemini AI model a prompt
+ * @param {string} prompt.body.required - The prompt text to send
+ * @returns {object} 200 - The AI response
+ * @returns {string} model - Model name
+ * @returns {string} output - Generated text from AI
+ * @returns {object} 400 - Missing prompt error
+ * @returns {object} 500 - Internal server error
+ */
 app.post("/api/ask/gemini", async (req, res) => {
   try {
     const { prompt } = req.body;
@@ -95,6 +131,16 @@ app.post("/api/ask/gemini", async (req, res) => {
 // ==========================
 // Route 4: Mistral
 // ==========================
+/**
+ * @route POST /api/ask/mistral
+ * @summary Ask the Mistral AI model a prompt
+ * @param {string} prompt.body.required - The prompt text to send
+ * @returns {object} 200 - The AI response
+ * @returns {string} model - Model name
+ * @returns {string} output - Generated text from AI
+ * @returns {object} 400 - Missing prompt error
+ * @returns {object} 500 - Internal server error
+ */
 app.post("/api/ask/mistral", async (req, res) => {
   try {
     const { prompt } = req.body;
@@ -117,9 +163,22 @@ app.post("/api/ask/mistral", async (req, res) => {
 // Frontend API Endpoints
 // ==========================
 
-// ordered model list
-const MODEL_ORDER = ["deepseek", "mistral", "gpt", "gemini"];
 
+// ==========================
+// Routes Using query.js AI Functions
+// ==========================
+
+/**
+ * Get the two neighboring models to use as fact-checkers for a given main model.
+ * Uses a circular ordering of models defined in MODEL_ORDER.
+ *
+ * @param {string} mainModel - The primary AI model being used (e.g., 'deepseek', 'mistral', 'gpt', 'gemini')
+ * @returns {string[]} Array of two model names to use as fact-checkers
+ *
+ * @example
+ * getFactCheckModels('gpt'); // might return ['mistral', 'gemini']
+ * getFactCheckModels('unknown'); // returns default ['mistral', 'gpt']
+ */
 // helper to pick fact checkers around main model
 function getFactCheckModels(mainModel) {
   const index = MODEL_ORDER.indexOf(mainModel);
@@ -129,6 +188,17 @@ function getFactCheckModels(mainModel) {
   return [left, right];
 }
 
+/**
+ * @route POST /api/startTopic
+ * @summary Start a new topic with the AI tutor
+ * @param {string} topic.body.required - Topic name
+ * @param {string} model.body.required - Main AI model to use (e.g., deepseek, gpt)
+ * @param {string} user_id.body.required - Current user ID
+ * @returns {object} 200 - Object containing model and initial AI output
+ * @returns {string} model - AI model used
+ * @returns {string} output - Initial AI explanation for the topic
+ * @returns {object} 500 - Error message
+ */
 app.post('/api/startTopic', async (req, res) => {
   const { topic, model, user_id } = req.body;
   try {
@@ -149,6 +219,20 @@ app.post('/api/startTopic', async (req, res) => {
   }
 });
 
+/**
+ * @route POST /api/askQuestion
+ * @summary Ask a question to the AI tutor, get initial answer, fact-checked feedback, and revised answer
+ * @param {string} topic.body.required - Topic context
+ * @param {string} question.body.required - User's question
+ * @param {string} model.body.required - Main AI model
+ * @param {string} user_id.body.required - Current user ID
+ * @returns {object} 200 - Object containing AI responses
+ * @returns {string} model - Main AI model used
+ * @returns {string} initial - Initial AI answer
+ * @returns {Array} factChecks - Array of fact-checking objects { model, check }
+ * @returns {string} revised - AI answer revised after feedback
+ * @returns {object} 500 - Error message
+ */
 app.post('/api/askQuestion', async (req, res) => {
   const { topic, question, model, user_id } = req.body;
   try {
@@ -183,6 +267,16 @@ app.post('/api/askQuestion', async (req, res) => {
   }
 });
 
+/**
+ * @route POST /api/hint
+ * @summary Request a Socratic hint from the AI tutor
+ * @param {string} topic.body.required - Topic context
+ * @param {string} model.body.required - Main AI model
+ * @param {string} user_id.body.required - Current user ID
+ * @returns {object} 200 - Object containing AI hint
+ * @returns {string} hint - Socratic hint generated by AI
+ * @returns {object} 500 - Error message
+ */
 app.post('/api/hint', async (req, res) => {
   const { topic, model, user_id } = req.body;
   try {
