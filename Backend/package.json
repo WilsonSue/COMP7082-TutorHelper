@@ -4,7 +4,7 @@
   "description": "",
   "main": "prompts.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest",
     "start": "node server.js",
     "lint": "cd .. && python -m ruff check backend/",
     "lint:fix": "cd .. && python -m ruff check --fix backend/",
