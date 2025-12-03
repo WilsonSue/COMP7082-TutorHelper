@@ -10,8 +10,8 @@ describe('Header Component', () => {
   });
 
   test('renders school icon', () => {
-    const { container } = render(<Header />);
-    const icon = container.querySelector('svg');
+    render(<Header />);
+    const icon = screen.getByRole('img', { hidden: true });
     expect(icon).toBeInTheDocument();
   });
 });

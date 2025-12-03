@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import Home from './HomePage';
 
@@ -11,13 +11,10 @@ jest.mock('react-router-dom', () => ({
 }));
 
 describe('HomePage Component', () => {
-  const mockUser = { id: 1, username: 'testuser', email: 'test@example.com' };
-
   beforeEach(() => {
     mockNavigate.mockClear();
     localStorage.clear();
 
-    // Mock fetch for this test suite
     global.fetch = jest.fn(() =>
       Promise.resolve({
         ok: true,

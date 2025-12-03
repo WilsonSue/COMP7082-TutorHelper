@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -107,6 +107,27 @@ function Home() {
   const navigate = useNavigate();
   const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:3000';
 
+  const fetchSessions = useCallback(
+    async (userId) => {
+      try {
+        setLoading(true);
+        const response = await fetch(`${API_BASE}/api/sessions/${userId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setSessions(data);
+        } else {
+          console.error('Failed to fetch sessions');
+        }
+      } catch (error) {
+        console.error('Error fetching sessions:', error);
+        showAlert('Failed to load conversation history', 'error');
+      } finally {
+        setLoading(false);
+      }
+    },
+    [API_BASE]
+  );
+
   useEffect(() => {
     const userData = localStorage.getItem('user');
 
@@ -142,25 +163,7 @@ function Home() {
     } else {
       navigate('/login');
     }
-  }, [navigate, API_BASE]);
-
-  const fetchSessions = async (userId) => {
-    try {
-      setLoading(true);
-      const response = await fetch(`${API_BASE}/api/sessions/${userId}`);
-      if (response.ok) {
-        const data = await response.json();
-        setSessions(data);
-      } else {
-        console.error('Failed to fetch sessions');
-      }
-    } catch (error) {
-      console.error('Error fetching sessions:', error);
-      showAlert('Failed to load conversation history', 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [navigate, API_BASE, fetchSessions]);
 
   const showAlert = (message, severity) => {
     setAlert({ open: true, message, severity });
@@ -324,7 +327,7 @@ function Home() {
               Welcome, {user.username}!
             </Typography>
             <Typography variant="body1" sx={{ color: '#666', mb: 1 }}>
-              Let's personalize your learning experience
+              Let&apos;s personalize your learning experience
             </Typography>
             <Typography variant="body2" sx={{ color: '#999' }}>
               Choose your preferred learning methods below

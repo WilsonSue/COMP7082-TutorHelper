@@ -89,7 +89,7 @@ function SettingsPage() {
     } else {
       navigate('/login');
     }
-  }, [navigate]);
+  }, [navigate, API_BASE]);
 
   const showAlert = (message, severity) => {
     setAlert({ open: true, message, severity });
