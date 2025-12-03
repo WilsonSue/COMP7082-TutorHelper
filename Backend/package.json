@@ -4,9 +4,9 @@
   "description": "",
   "main": "prompts.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest",
     "start": "node server.js",
-     "lint": "cd .. && python -m ruff check backend/",
+    "lint": "cd .. && python -m ruff check backend/",
     "lint:fix": "cd .. && python -m ruff check --fix backend/",
     "format": "cd .. && python -m ruff format backend/",
     "format:check": "cd .. && python -m ruff format --check backend/"
@@ -25,5 +25,9 @@
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "openai": "^6.8.0"
+  },
+  "devDependencies": {
+    "jest": "^30.2.0",
+    "supertest": "^7.1.4"
   }
 }
