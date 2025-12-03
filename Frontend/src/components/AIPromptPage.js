@@ -32,15 +32,15 @@ function AIPrompt() {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-      const userData = localStorage.getItem('user');
-  
-      if (userData) {
-        const userObj = JSON.parse(userData);
-        setUser(userObj);
-      } else {
-        navigate('/login');
-      }
-    }, [navigate]);
+    const userData = localStorage.getItem('user');
+
+    if (userData) {
+      const userObj = JSON.parse(userData);
+      setUser(userObj);
+    } else {
+      navigate('/login');
+    }
+  }, [navigate]);
 
   // =====================
   // OUTPUT FORMATTING
@@ -48,46 +48,41 @@ function AIPrompt() {
 
   // Nicely format output objects from the backend
   const formatOutput = (data) => {
-    if (typeof data !== "object" || data === null) {
+    if (typeof data !== 'object' || data === null) {
       return String(data); // let markdown render naturally
     }
 
-    let formatted = "";
+    let formatted = '';
 
-    for (const key in data) {
-      const value = data[key];
-      const title = key.replace(/([A-Z])/g, " $1").trim();
+    // Use Object.entries to avoid no-loop-func issue
+    Object.entries(data).forEach(([key, value]) => {
+      const title = key.replace(/([A-Z])/g, ' $1').trim();
 
       formatted += `## ${title}\n\n`;
 
-      if (typeof value === "string") {
+      if (typeof value === 'string') {
         formatted += `${value}\n\n`;
-      } 
-      else if (Array.isArray(value)) {
+      } else if (Array.isArray(value)) {
         value.forEach((item, idx) => {
           formatted += `### Item ${idx + 1}\n\n`;
 
-          if (typeof item === "object") {
-            formatted += "```json\n";
+          if (typeof item === 'object') {
+            formatted += '```json\n';
             formatted += JSON.stringify(item, null, 2);
-            formatted += "\n```\n\n";
+            formatted += '\n```\n\n';
           } else {
             formatted += `${item}\n\n`;
           }
         });
-      }
-      else if (typeof value === "object") {
-        formatted += "```json\n";
+      } else if (typeof value === 'object') {
+        formatted += '```json\n';
         formatted += JSON.stringify(value, null, 2);
-        formatted += "\n```\n\n";
+        formatted += '\n```\n\n';
       }
-    }
+    });
 
     return formatted.trim();
   };
-
-  // Helper to wrap text to readable width
-  const wrapText = (text) => text;  // do nothing, keep markdown intact
 
   const display = (data) => {
     const formatted = formatOutput(data);
@@ -95,7 +90,7 @@ function AIPrompt() {
     setFullOutput(formatted);
 
     // Extract revised section if it exists
-    const splitIndex = formatted.indexOf("## revised");
+    const splitIndex = formatted.indexOf('## revised');
 
     if (splitIndex !== -1) {
       setRevisionOnly(formatted.slice(splitIndex));
@@ -109,9 +104,9 @@ function AIPrompt() {
 
   const postData = async (url, data) => {
     const res = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data)
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return await res.json();
@@ -120,7 +115,7 @@ function AIPrompt() {
   // start topic
   const handleStartTopic = async () => {
     if (!topic.trim()) {
-      setError("Enter a topic");
+      setError('Enter a topic');
       return;
     }
 
@@ -128,7 +123,11 @@ function AIPrompt() {
     setError('');
 
     try {
-      const data = await postData("/api/startTopic", { topic, model, user_id: user.id });
+      const data = await postData('/api/startTopic', {
+        topic,
+        model,
+        user_id: user.id,
+      });
       display(data);
     } catch (err) {
       display({ error: err.message });
@@ -140,7 +139,7 @@ function AIPrompt() {
   // ask question
   const handleAskQuestion = async () => {
     if (!topic.trim() || !question.trim()) {
-      setError("Enter a topic and question");
+      setError('Enter a topic and question');
       return;
     }
 
@@ -148,7 +147,12 @@ function AIPrompt() {
     setError('');
 
     try {
-      const data = await postData("/api/askQuestion", { topic, question, model, user_id: user.id });
+      const data = await postData('/api/askQuestion', {
+        topic,
+        question,
+        model,
+        user_id: user.id,
+      });
       display(data);
     } catch (err) {
       display({ error: err.message });
@@ -160,7 +164,7 @@ function AIPrompt() {
   // hint
   const handleHint = async () => {
     if (!topic.trim()) {
-      setError("Enter a topic first");
+      setError('Enter a topic first');
       return;
     }
 
@@ -168,7 +172,11 @@ function AIPrompt() {
     setError('');
 
     try {
-      const data = await postData("/api/hint", { topic, model, user_id: user.id });
+      const data = await postData('/api/hint', {
+        topic,
+        model,
+        user_id: user.id,
+      });
       display(data);
     } catch (err) {
       display({ error: err.message });
@@ -180,12 +188,12 @@ function AIPrompt() {
   return (
     <Box sx={{ flexGrow: 1, minHeight: '100vh', bgcolor: '#f5f5f5' }}>
       {/* Header */}
-      <AppBar 
-        position="static" 
-        sx={{ 
-          bgcolor: 'white', 
+      <AppBar
+        position="static"
+        sx={{
+          bgcolor: 'white',
           color: '#333',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
         }}
       >
         <Toolbar sx={{ justifyContent: 'space-between' }}>
@@ -201,13 +209,13 @@ function AIPrompt() {
       {/* Main Content */}
       <Container maxWidth="md" sx={{ py: 4 }}>
         <Paper sx={{ p: 4, mb: 3 }}>
-          <Typography 
-            variant="h4" 
-            sx={{ 
-              fontWeight: 600, 
+          <Typography
+            variant="h4"
+            sx={{
+              fontWeight: 600,
               color: '#333',
               mb: 4,
-              textAlign: 'center'
+              textAlign: 'center',
             }}
           >
             TutorHelper Interactive Test
@@ -304,14 +312,14 @@ function AIPrompt() {
             <Button
               variant="contained"
               onClick={() => {
-              if (showRevisionOnly) {
+                if (showRevisionOnly) {
                   setOutput(fullOutput);
                 } else {
                   setOutput(revisionOnly);
                 }
                 setShowRevisionOnly(!showRevisionOnly);
               }}
-              disabled={loading}  
+              disabled={loading}
               sx={{
                 bgcolor: '#2c3e50',
                 textTransform: 'none',
@@ -320,7 +328,7 @@ function AIPrompt() {
                 },
               }}
             >
-              {showRevisionOnly ? "Show Full Output" : "Hide Fact Checks"}
+              {showRevisionOnly ? 'Show Full Output' : 'Hide Fact Checks'}
             </Button>
           </Box>
 
@@ -338,7 +346,7 @@ function AIPrompt() {
               maxHeight: '400px',
               overflow: 'auto',
               fontSize: '14px',
-              }}
+            }}
           >
             {output ? (
               <ReactMarkdown>{output}</ReactMarkdown>

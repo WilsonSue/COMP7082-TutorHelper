@@ -5,7 +5,11 @@
   "main": "prompts.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "start": "node server.js",
+     "lint": "cd .. && python -m ruff check backend/",
+    "lint:fix": "cd .. && python -m ruff check --fix backend/",
+    "format": "cd .. && python -m ruff format backend/",
+    "format:check": "cd .. && python -m ruff format --check backend/"
   },
   "keywords": [],
   "author": "",

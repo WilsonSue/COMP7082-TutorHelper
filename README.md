@@ -33,3 +33,9 @@ node .\server.js
 ```
 
 Once both services are running, open `http://localhost:3000` to use TutorBot.
+
+## Frontend Linting
+run locally
+```powershell
+npm run lint
+```
